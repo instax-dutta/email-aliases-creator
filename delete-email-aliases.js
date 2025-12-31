@@ -10,6 +10,52 @@
  */
 
 import { readFile } from 'fs/promises';
+import { existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// ============================================================================
+// ENVIRONMENT LOADER
+// ============================================================================
+
+async function loadEnvFile() {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const envPath = join(__dirname, '.env');
+
+    if (!existsSync(envPath)) {
+        return;
+    }
+
+    try {
+        const envContent = await readFile(envPath, 'utf-8');
+        const lines = envContent.split('\n');
+
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#')) continue;
+
+            const match = trimmed.match(/^([^=]+)=(.*)$/);
+            if (match) {
+                const key = match[1].trim();
+                let value = match[2].trim();
+
+                if ((value.startsWith('"') && value.endsWith('"')) ||
+                    (value.startsWith("'") && value.endsWith("'"))) {
+                    value = value.slice(1, -1);
+                }
+
+                if (!process.env[key]) {
+                    process.env[key] = value;
+                }
+            }
+        }
+    } catch (error) {
+        console.warn(`⚠️  Could not load .env file: ${error.message}`);
+    }
+}
+
+await loadEnvFile();
 
 // ============================================================================
 // CONFIGURATION

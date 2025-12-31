@@ -296,6 +296,67 @@ async function getAliasCount(rl) {
 }
 
 // ============================================================================
+// TOON (Token-Oriented Object Notation) ENCODER
+// ============================================================================
+
+/**
+ * Generates TOON format output - compact, LLM-friendly format
+ * Reduces token count by 30-60% compared to JSON
+ * 
+ * @param {Array} results - Array of alias objects
+ * @param {Object} metadata - Configuration metadata
+ * @returns {string} TOON formatted string
+ */
+function generateToon(results, metadata) {
+    const lines = [];
+
+    // Metadata section
+    lines.push('# Email Aliases Export (TOON Format)');
+    lines.push(`# Generated: ${metadata.timestamp}`);
+    lines.push('');
+    lines.push('metadata:');
+    lines.push(`  bundle_id: ${metadata.bundle}`);
+    lines.push(`  bundle_name: ${metadata.bundleName}`);
+    lines.push(`  domain: ${metadata.domain}`);
+    lines.push(`  destination: ${metadata.destination}`);
+    lines.push(`  total_count: ${metadata.totalCount}`);
+    lines.push(`  success_count: ${metadata.successCount}`);
+    lines.push(`  failure_count: ${metadata.failureCount}`);
+    lines.push('');
+
+    // Successful aliases (tabular format - TOON's strength)
+    const successful = results.filter(r => r.status === 'success');
+    if (successful.length > 0) {
+        lines.push(`successful_aliases[${successful.length}]{alias,rule_id,created_at}:`);
+        successful.forEach(r => {
+            const created = r.createdAt.split('.')[0].replace('T', ' ');
+            lines.push(`  ${r.alias},${r.ruleId},${created}`);
+        });
+        lines.push('');
+    }
+
+    // Failed aliases (if any)
+    const failed = results.filter(r => r.status === 'failed');
+    if (failed.length > 0) {
+        lines.push(`failed_aliases[${failed.length}]:`);
+        failed.forEach(r => {
+            lines.push(`  - alias: ${r.alias}`);
+            lines.push(`    error: ${r.error || 'Unknown error'}`);
+            lines.push(`    created_at: ${r.createdAt.split('.')[0].replace('T', ' ')}`);
+        });
+        lines.push('');
+    }
+
+    // Summary statistics
+    lines.push('summary:');
+    lines.push(`  success_rate: ${((metadata.successCount / metadata.totalCount) * 100).toFixed(2)}%`);
+    lines.push(`  total_aliases: ${metadata.totalCount}`);
+    lines.push(`  bundle_used: ${metadata.bundleName}`);
+
+    return lines.join('\n');
+}
+
+// ============================================================================
 // CONFIGURATION
 // ============================================================================
 
@@ -582,6 +643,7 @@ async function main() {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
     const outputFileName = `email-aliases-${CONFIG.selectedBundle}-${timestamp}.json`;
     const txtFileName = `email-aliases-${CONFIG.selectedBundle}-${timestamp}.txt`;
+    const toonFileName = `email-aliases-${CONFIG.selectedBundle}-${timestamp}.toon`;
 
     try {
         await writeFile(outputFileName, JSON.stringify(results, null, 2), 'utf-8');
@@ -599,9 +661,29 @@ async function main() {
 
         await writeFile(txtFileName, successfulAliases + '\n', 'utf-8');
         console.log(`📝 Email list exported to: ${txtFileName}`);
-        console.log(`   (${successCount} emails, one per line)\n`);
+        console.log(`   (${successCount} emails, one per line)`);
     } catch (error) {
-        console.error(`\n❌ Failed to write TXT file: ${error.message}\n`);
+        console.error(`\n❌ Failed to write TXT file: ${error.message}`);
+    }
+
+    // Export TOON file for LLM usage (30-60% token reduction vs JSON)
+    try {
+        const toonContent = generateToon(results, {
+            bundle: CONFIG.selectedBundle,
+            bundleName: selectedBundle.name,
+            domain: CONFIG.emailDomain,
+            destination: CONFIG.destinationEmail,
+            totalCount: results.length,
+            successCount,
+            failureCount,
+            timestamp: new Date().toISOString()
+        });
+
+        await writeFile(toonFileName, toonContent, 'utf-8');
+        console.log(`🤖 TOON (LLM-optimized) exported to: ${toonFileName}`);
+        console.log(`   (30-60% fewer tokens than JSON)\n`);
+    } catch (error) {
+        console.error(`\n❌ Failed to write TOON file: ${error.message}\n`);
     }
 
     // Summary

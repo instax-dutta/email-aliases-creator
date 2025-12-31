@@ -2,7 +2,7 @@
 
 # 🚀 Cloudflare Email Alias Creator
 
-### Interactive privacy-focused email alias generator with themed word bundles
+### Interactive privacy-focused email alias generator with themed bundles • **LLM-Ready Outputs**
 
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -19,7 +19,7 @@
 
 An **interactive, privacy-focused** Node.js tool that bulk-creates beautiful, human-readable email aliases using Cloudflare's Email Routing API.
 
-Choose from **6 themed word bundles** to generate aliases that match your style:
+Choose from **6 themed word bundles** to generate aliases that match your style. Get **LLM-ready outputs** in TOON format (30-60% fewer tokens than JSON)!
 
 ```
 🛡️  Privacy Guardian → cipher.vault@yourdomain.com
@@ -37,6 +37,7 @@ All aliases automatically forward to your main inbox. Perfect for:
 - 📧 **Service-specific aliases** (each service gets unique email)
 - 🎭 **Disposable addresses** that look professional
 - 🔐 **Enhanced security** - track who sells your email
+- 🤖 **LLM workflows** - AI-optimized TOON format for Claude, GPT, Gemini
 
 ---
 
@@ -52,7 +53,8 @@ All aliases automatically forward to your main inbox. Perfect for:
 | ⚡ **Smart Rate Limiting** | Automatic delays to respect API limits |
 | 🔄 **Auto-Retry Logic** | Exponential backoff for transient failures |
 | 🧪 **Dry Run Mode** | Preview aliases before creating them |
-| 📊 **Dual Export** | JSON (with metadata) + TXT (one email per line) |
+| 📊 **Triple Export** | JSON + TXT + TOON (LLM-optimized, 30-60% fewer tokens) |
+| 🤖 **LLM-Ready Output** | TOON format designed for AI workflows (Claude, GPT, Gemini) |
 | 🗑️ **Auto Cleanup** | Delete script removes tracking files after successful deletion |
 | 🔧 **JSON to TXT Converter** | Standalone utility to convert old JSON files |
 | 🚫 **Zero Dependencies** | Uses only Node.js native modules |
@@ -326,7 +328,7 @@ jade.harbor@domain.com
 
 ### Output Files
 
-Every alias creation generates **TWO files** for maximum flexibility:
+Every alias creation generates **THREE files** for maximum flexibility:
 
 #### 📊 JSON File (Complete Audit Trail)
 
@@ -379,9 +381,68 @@ encrypted.shield@domain.com
 - Simple text editor viewing
 - Sharing with team members
 
+#### 🤖 TOON File (LLM-Optimized) **NEW!**
+
+```
+email-aliases-privacy-guardian-2025-12-31.toon
+```
+
+**TOON = Token-Oriented Object Notation**  
+LLM-friendly format with **30-60% fewer tokens than JSON**!
+
+**Contains:**
+
+- Structured metadata
+- Tabular alias data
+- Summary statistics
+- Human-readable format
+
+**Example:**
+
+```toon
+# Email Aliases Export (TOON Format)
+# Generated: 2025-12-31T11:01:00.000Z
+
+metadata:
+  bundle_id: privacy-guardian
+  bundle_name: 🛡️  Privacy Guardian  
+  domain: sdad.pro
+  destination: user@gmail.com
+  total_count: 111
+  success_count: 111
+  failure_count: 0
+
+successful_aliases[111]{alias,rule_id,created_at}:
+  cipher.vault@sdad.pro,abc123...,2025-12-31 10:25:00
+  ghost.proxy@sdad.pro,def456...,2025-12-31 10:25:01
+  stealth.sentinel@sdad.pro,ghi789...,2025-12-31 10:25:02
+  ...
+
+summary:
+  success_rate: 100.00%
+  total_aliases: 111
+  bundle_used: 🛡️  Privacy Guardian
+```
+
+**Perfect for:**
+
+- **AI/LLM workflows** - Claude, GPT-4, Gemini
+- **Token cost savings** - 30-60% reduction
+- **Automated processing** - Easy to parse structure
+- **Documentation** - Human-readable metadata
+- **Data analysis** - Structured format for analysis tools
+
+**LLM Benefits:**
+
+- ✅ Compact tabular format for uniform data
+- ✅ Explicit field declarations  
+- ✅ No redundant punctuation (brackets, quotes)
+- ✅ Indentation-based nesting
+- ✅ Better comprehension accuracy vs JSON
+
 #### 🔧 Convert Old JSON Files
 
-Have old JSON files without TXT? Convert them:
+Have old JSON files without TXT/TOON? Convert them:
 
 ```bash
 node json-to-txt.js email-aliases-2025-12-31.json
@@ -398,6 +459,7 @@ node delete-email-aliases.js email-aliases-privacy-guardian-2025-12-31.json
 # After successful deletion:
 🗑️  Cleaned up: email-aliases-privacy-guardian-2025-12-31.json
 🗑️  Cleaned up: email-aliases-privacy-guardian-2025-12-31.txt
+🗑️  Cleaned up: email-aliases-privacy-guardian-2025-12-31.toon
 
 ✅ All aliases deleted and tracking files removed!
 ```
@@ -406,8 +468,8 @@ node delete-email-aliases.js email-aliases-privacy-guardian-2025-12-31.json
 
 - Only deletes files if ALL aliases deleted successfully
 - Keeps files if any failures occur (for retry)
-- Deletes both JSON and TXT automatically
-- Graceful handling if TXT doesn't exist
+- Deletes JSON, TXT, and TOON automatically
+- Graceful handling if files don't exist
 
 ---
 

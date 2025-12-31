@@ -1,0 +1,37 @@
+{
+  "name": "cloudflare-email-alias-creator",
+  "version": "1.0.0",
+  "description": "🚀 Bulk create human-readable email aliases with Cloudflare Email Routing - zero dependencies, production-grade",
+  "type": "module",
+  "main": "create-email-aliases.js",
+  "scripts": {
+    "start": "node create-email-aliases.js",
+    "dry-run": "node create-email-aliases.js --dry-run",
+    "test": "node test-credentials.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/cloudflare-email-alias-creator.git"
+  },
+  "keywords": [
+    "cloudflare",
+    "email-routing",
+    "email-aliases",
+    "bulk-creation",
+    "automation",
+    "privacy",
+    "email-forwarding",
+    "disposable-email",
+    "cli-tool",
+    "zero-dependencies"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yourusername/cloudflare-email-alias-creator/issues"
+  },
+  "homepage": "https://github.com/yourusername/cloudflare-email-alias-creator#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

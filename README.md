@@ -55,10 +55,11 @@ All aliases automatically forward to your main inbox. Perfect for:
 | 🧪 **Dry Run Mode** | Preview aliases before creating them |
 | 📊 **Triple Export** | JSON + TXT + TOON (LLM-optimized, 30-60% fewer tokens) |
 | 🤖 **LLM-Ready Output** | TOON format designed for AI workflows (Claude, GPT, Gemini) |
+| 🔐 **Password Generator** | Secure 12-char passwords with crypto-random generation (15,000+ passwords/sec) |
 | 🗑️ **Auto Cleanup** | Delete script removes tracking files after successful deletion |
 | 🔧 **JSON to TXT Converter** | Standalone utility to convert old JSON files |
 | 🚫 **Zero Dependencies** | Uses only Node.js native modules |
-| 🛠️ **Bonus Tools** | Credential tester, deletion script, and file converter |
+| 🛠️ **Bonus Tools** | Credential tester, deletion script, password generator, and file converter |
 
 ---
 
@@ -470,6 +471,37 @@ node delete-email-aliases.js email-aliases-privacy-guardian-2025-12-31.json
 - Keeps files if any failures occur (for retry)
 - Deletes JSON, TXT, and TOON automatically
 - Graceful handling if files don't exist
+
+### Generate Passwords for Aliases
+
+Add secure passwords to your email aliases:
+
+```bash
+# Generate passwords for existing aliases
+node generate-passwords.js email-aliases-privacy-guardian-2025-12-31.txt
+
+# Files updated in place:
+✅ Updated: email-aliases-privacy-guardian-2025-12-31.txt (email:password format)
+✅ Updated: email-aliases-privacy-guardian-2025-12-31.json (with credentials)
+✅ Updated: email-aliases-privacy-guardian-2025-12-31.toon (LLM-optimized)
+```
+
+**Password Features:**
+
+- 🔐 **12 characters** - Mix of lowercase, uppercase, numbers, special chars
+- ⚡ **15,000+ passwords/sec** - Cryptographically secure generation
+- ✨ **Zero duplicates** - Guaranteed unique passwords
+- 🔒 **Crypto-random** - Uses Node.js `crypto.randomBytes()`
+
+**Output Format:**
+
+```
+private.lair@sdad.pro:7S;*)I93=>5r
+private.asylum@sdad.pro:S^2nh0d,0L2:
+untraced.tunnel@sdad.pro:7_@x)Y%5L=[A
+```
+
+**Security Warning:** Password files contain plaintext credentials. Store securely or use a password manager!
 
 ---
 

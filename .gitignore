@@ -8,6 +8,9 @@ email-aliases-*.json
 email-aliases-*.txt
 email-aliases-*.toon
 
+# Password files (CRITICAL - contains plaintext passwords!)
+*-with-passwords.*
+
 # Node modules
 node_modules/
 

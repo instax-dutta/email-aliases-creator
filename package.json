@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/cloudflare-email-alias-creator.git"
+    "url": "https://github.com/instax-dutta/email-aliases-creator.git"
   },
   "keywords": [
     "cloudflare",
@@ -25,12 +25,12 @@
     "cli-tool",
     "zero-dependencies"
   ],
-  "author": "Your Name",
+  "author": "Saidutta Abhishek Dash",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/yourusername/cloudflare-email-alias-creator/issues"
+    "url": "https://github.com/instax-dutta/email-aliases-creator/issues"
   },
-  "homepage": "https://github.com/yourusername/cloudflare-email-alias-creator#readme",
+  "homepage": "https://github.com/instax-dutta/email-aliases-creator#readme",
   "engines": {
     "node": ">=18.0.0"
   }

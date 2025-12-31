@@ -68,8 +68,8 @@ All aliases automatically forward to your main inbox. Perfect for:
 ### 1️⃣ Clone & Setup
 
 ```bash
-git clone https://github.com/yourusername/email-alias-creator.git
-cd email-alias-creator
+git clone https://github.com/instax-dutta/email-aliases-creator.git
+cd email-aliases-creator
 cp .env.example .env
 ```
 
@@ -346,7 +346,7 @@ Contributions are welcome! Here are some ideas:
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+5. Open a [Pull Request](https://github.com/instax-dutta/email-aliases-creator/pulls)
 
 ---
 
@@ -366,9 +366,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 🐛 [Report a bug](https://github.com/yourusername/email-alias-creator/issues)
-- 💡 [Request a feature](https://github.com/yourusername/email-alias-creator/issues)
-- 📖 [Documentation](https://github.com/yourusername/email-alias-creator/wiki)
+- 🐛 [Report a bug](https://github.com/instax-dutta/email-aliases-creator/issues)
+- 💡 [Request a feature](https://github.com/instax-dutta/email-aliases-creator/issues)
+- 📖 [Documentation](https://github.com/instax-dutta/email-aliases-creator/wiki)
 
 ---
 

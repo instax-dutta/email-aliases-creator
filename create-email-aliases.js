@@ -3,8 +3,8 @@
 /**
  * Cloudflare Email Routing Bulk Alias Creator
  * 
- * A production-grade script for creating email routing aliases programmatically.
- * Generates human-readable random aliases and creates Cloudflare Email Routing rules.
+ * Interactive privacy-focused email alias generator with themed word bundles.
+ * Generates human-readable random aliases using Cloudflare Email Routing.
  * 
  * @requires Node.js 18+ (for native fetch)
  */
@@ -13,6 +13,7 @@ import { writeFile, readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import readline from 'readline';
 
 // ============================================================================
 // ENVIRONMENT LOADER
@@ -20,7 +21,6 @@ import { dirname, join } from 'path';
 
 /**
  * Loads environment variables from .env file if it exists
- * Simple parser that handles basic KEY=value format
  */
 async function loadEnvFile() {
     const __filename = fileURLToPath(import.meta.url);
@@ -28,7 +28,7 @@ async function loadEnvFile() {
     const envPath = join(__dirname, '.env');
 
     if (!existsSync(envPath)) {
-        return; // .env file doesn't exist, use system env vars
+        return;
     }
 
     try {
@@ -36,23 +36,19 @@ async function loadEnvFile() {
         const lines = envContent.split('\n');
 
         for (const line of lines) {
-            // Skip empty lines and comments
             const trimmed = line.trim();
             if (!trimmed || trimmed.startsWith('#')) continue;
 
-            // Parse KEY=value
             const match = trimmed.match(/^([^=]+)=(.*)$/);
             if (match) {
                 const key = match[1].trim();
                 let value = match[2].trim();
 
-                // Remove quotes if present
                 if ((value.startsWith('"') && value.endsWith('"')) ||
                     (value.startsWith("'") && value.endsWith("'"))) {
                     value = value.slice(1, -1);
                 }
 
-                // Only set if not already in environment (system env takes precedence)
                 if (!process.env[key]) {
                     process.env[key] = value;
                 }
@@ -63,8 +59,241 @@ async function loadEnvFile() {
     }
 }
 
-// Load .env file before configuration
 await loadEnvFile();
+
+// ============================================================================
+// THEMED WORD BUNDLES FOR PRIVACY-FOCUSED ALIASES
+// ============================================================================
+
+const WORD_BUNDLES = {
+    'privacy-guardian': {
+        name: '🛡️  Privacy Guardian',
+        description: 'Security & anonymity themed - perfect for maximum privacy',
+        prefixes: [
+            'anonymous', 'cipher', 'crypt', 'ghost', 'hidden', 'incognito', 'masked',
+            'phantom', 'private', 'secret', 'secure', 'shadow', 'shield', 'silent',
+            'stealth', 'vault', 'veiled', 'whisper', 'cloak', 'enigma', 'obscure',
+            'covert', 'discrete', 'guarded', 'keeper', 'sentinel', 'warden', 'aegis',
+            'bastion', 'fortress', 'haven', 'refuge', 'sanctuary', 'guardian', 'protector',
+            'defender', 'encrypted', 'locked', 'sealed', 'shielded', 'armored', 'fortified',
+            'invisible', 'unseen', 'untraced', 'untraceable', 'nameless', 'faceless', 'void',
+            'dark', 'night', 'twilight', 'dusk', 'shade', 'umbra', 'eclipse'
+        ],
+        suffixes: [
+            'vault', 'cipher', 'lock', 'key', 'gate', 'wall', 'shield', 'guard',
+            'keeper', 'watcher', 'sentinel', 'proxy', 'mask', 'cloak', 'veil',
+            'shadow', 'ghost', 'phantom', 'spirit', 'shade', 'wraith', 'specter',
+            'node', 'relay', 'tunnel', 'bridge', 'portal', 'passage', 'path',
+            'route', 'channel', 'conduit', 'link', 'nexus', 'hub', 'core',
+            'fortress', 'bastion', 'citadel', 'haven', 'refuge', 'sanctuary', 'asylum',
+            'den', 'lair', 'cache', 'stash', 'reserve', 'archive', 'repository',
+            'sentry', 'lookout', 'observer', 'monitor', 'scanner', 'detector'
+        ]
+    },
+
+    'tech-wizard': {
+        name: '⚡ Tech Wizard',
+        description: 'Tech & coding themed - for the digital natives',
+        prefixes: [
+            'binary', 'quantum', 'neural', 'cyber', 'digital', 'virtual', 'pixel',
+            'byte', 'nano', 'micro', 'macro', 'meta', 'proto', 'core', 'kernel',
+            'daemon', 'thread', 'async', 'sync', 'parallel', 'vector', 'matrix',
+            'logic', 'boolean', 'algorithm', 'regex', 'syntax', 'compile', 'runtime',
+            'stack', 'heap', 'cache', 'buffer', 'stream', 'pipeline', 'packet',
+            'protocol', 'network', 'mesh', 'grid', 'cloud', 'edge', 'fog',
+            'data', 'crypto', 'hash', 'token', 'session', 'instance', 'module',
+            'script', 'lambda', 'delta', 'alpha', 'beta', 'gamma', 'omega'
+        ],
+        suffixes: [
+            'bit', 'byte', 'node', 'core', 'chip', 'circuit', 'gate', 'port',
+            'socket', 'thread', 'process', 'daemon', 'service', 'worker', 'agent',
+            'bot', 'proxy', 'server', 'client', 'host', 'mesh', 'grid',
+            'network', 'cluster', 'shard', 'partition', 'segment', 'block', 'chunk',
+            'packet', 'frame', 'payload', 'header', 'footer', 'wrapper', 'container',
+            'pod', 'instance', 'replica', 'mirror', 'cache', 'buffer', 'queue',
+            'stack', 'heap', 'tree', 'graph', 'array', 'vector', 'matrix',
+            'tensor', 'scalar', 'pointer', 'reference', 'handle', 'descriptor'
+        ]
+    },
+
+    'nature-zen': {
+        name: '🌿 Nature Zen',
+        description: 'Calm & natural themed - peaceful and organic',
+        prefixes: [
+            'alpine', 'amber', 'arctic', 'autumn', 'azure', 'breeze', 'calm',
+            'cascade', 'cedar', 'cloud', 'coral', 'crystal', 'dawn', 'dusk',
+            'earth', 'emerald', 'forest', 'frost', 'glacial', 'golden', 'jade',
+            'lunar', 'maple', 'marine', 'meadow', 'misty', 'moss', 'mountain',
+            'ocean', 'olive', 'opal', 'pacific', 'pearl', 'pebble', 'pine',
+            'quartz', 'rain', 'river', 'sage', 'sand', 'sapphire', 'sky',
+            'snow', 'solar', 'spring', 'stellar', 'stone', 'summer', 'sunset',
+            'thunder', 'tide', 'timber', 'topaz', 'valley', 'verdant', 'wild'
+        ],
+        suffixes: [
+            'bay', 'beach', 'brook', 'canyon', 'cave', 'cliff', 'cloud', 'coast',
+            'cove', 'creek', 'delta', 'dune', 'falls', 'field', 'fjord', 'forest',
+            'garden', 'glacier', 'grove', 'harbor', 'haven', 'hill', 'hollow', 'island',
+            'lake', 'lagoon', 'marsh', 'meadow', 'mesa', 'mist', 'mountain', 'oasis',
+            'ocean', 'pass', 'path', 'peak', 'pine', 'plain', 'pond', 'prairie',
+            'reef', 'ridge', 'river', 'rock', 'shore', 'spring', 'stone', 'stream',
+            'summit', 'terrace', 'trail', 'tree', 'valley', 'vista', 'wave', 'wood'
+        ]
+    },
+
+    'urban-legend': {
+        name: '🏙️  Urban Legend',
+        description: 'Modern & city themed - sleek and contemporary',
+        prefixes: [
+            'apex', 'axis', 'bold', 'bright', 'chrome', 'concrete', 'core', 'edge',
+            'electric', 'epic', 'flash', 'flex', 'fusion', 'glitch', 'glow', 'grid',
+            'high', 'hyper', 'instant', 'jet', 'kinetic', 'level', 'metro', 'modern',
+            'neon', 'neural', 'nexus', 'Night', 'nova', 'omega', 'peak', 'pixel',
+            'prime', 'prism', 'pulse', 'quick', 'rapid', 'razor', 'reflex', 'rhythm',
+            'rush', 'sharp', 'signal', 'sleek', 'sonic', 'spark', 'speed', 'spike',
+            'surge', 'swift', 'sync', 'tempo', 'titan', 'turbo', 'ultra', 'urban'
+        ],
+        suffixes: [
+            'ace', 'arc', 'axis', 'beat', 'blast', 'blaze', 'block', 'bolt',
+            'buzz', 'cafe', 'chip', 'city', 'club', 'dash', 'deck', 'district',
+            'drive', 'drop', 'edge', 'flash', 'flow', 'flux', 'grid', 'hub',
+            'lane', 'level', 'line', 'link', 'loop', 'mall', 'metro', 'mode',
+            'node', 'pace', 'park', 'phase', 'pier', 'plaza', 'point', 'pulse',
+            'quest', 'rails', 'rise', 'route', 'shift', 'square', 'station', 'street',
+            'strip', 'sync', 'tower', 'track', 'trade', 'transit', 'venue', 'zone'
+        ]
+    },
+
+    'cosmic-explorer': {
+        name: '🚀 Cosmic Explorer',
+        description: 'Space & sci-fi themed - for the stargazers',
+        prefixes: [
+            'astral', 'atomic', 'aurora', 'celestial', 'cosmic', 'dark', 'distant',
+            'eternal', 'galactic', 'gravity', 'infinite', 'interstellar', 'light', 'lunar',
+            'meteor', 'nebula', 'neutron', 'nova', 'orbit', 'photon', 'plasma', 'pulsar',
+            'quantum', 'quasar', 'radiant', 'solar', 'space', 'spectral', 'star', 'stellar',
+            'super', 'void', 'warp', 'zero', 'andromeda', 'apollo', 'aries', 'atlas',
+            'aurora', 'boson', 'comet', 'corona', 'cosmos', 'eclipse', 'event', 'exo',
+            'fusion', 'gamma', 'helios', 'horizon', 'ion', 'jupiter', 'kepler', 'laser',
+            'lunar', 'mars', 'mercury', 'milky', 'orbit', 'orion', 'phoenix', 'pluto',
+            'polaris', 'radiation', 'red', 'saturn', 'sirius', 'titan', 'uranus', 'vega'
+        ],
+        suffixes: [
+            'star', 'nova', 'nebula', 'galaxy', 'cosmos', 'comet', 'meteor', 'orbit',
+            'moon', 'planet', 'satellite', 'asteroid', 'sphere', 'void', 'quasar', 'pulsar',
+            'photon', 'proton', 'neutron', 'electron', 'particle', 'wave', 'field', 'force',
+            'ray', 'beam', 'light', 'dark', 'matter', 'energy', 'space', 'time',
+            'dimension', 'portal', 'gate', 'wormhole', 'rift', 'flux', 'drift', 'shift',
+            'jump', 'leap', 'warp', 'drive', 'engine', 'reactor', 'core', 'station',
+            'base', 'outpost', 'colony', 'ship', 'craft', 'vessel', 'probe', 'explorer'
+        ]
+    },
+
+    'mystic-shadow': {
+        name: '🔮 Mystic Shadow',
+        description: 'Fantasy & mysterious themed - enigmatic and magical',
+        prefixes: [
+            'ancient', 'arcane', 'blessed', 'celestial', 'cryptic', 'cursed', 'dark',
+            'divine', 'dragon', 'dream', 'echo', 'elder', 'elven', 'enchanted', 'eternal',
+            'fabled', 'fallen', 'forbidden', 'forgotten', 'frost', 'gloom', 'grim', 'hidden',
+            'holy', 'lost', 'lunar', 'magic', 'midnight', 'mystic', 'mythic', 'night',
+            'obsidian', 'omen', 'oracle', 'phantom', 'primal', 'raven', 'rune', 'sacred',
+            'shadow', 'silent', 'silver', 'soul', 'spectral', 'spirit', 'star', 'storm',
+            'twilight', 'umbral', 'void', 'wicked', 'wild', 'witch', 'wolf', 'wraith'
+        ],
+        suffixes: [
+            'blade', 'blood', 'bone', 'book', 'cairn', 'chalice', 'circle', 'coven',
+            'crown', 'crystal', 'curse', 'dawn', 'dream', 'dusk', 'echo', 'ember',
+            'eye', 'flame', 'gate', 'gaze', 'gem', 'glyph', 'grimoire', 'grove',
+            'heart', 'keeper', 'key', 'mark', 'mirror', 'moon', 'oath', 'oracle',
+            'page', 'pendant', 'portal', 'prophecy', 'relic', 'rite', 'rune', 'scroll',
+            'seal', 'seer', 'shade', 'sigil', 'song', 'soul', 'spell', 'spirit',
+            'star', 'stone', 'talisman', 'tome', 'veil', 'vessel', 'ward', 'whisper'
+        ]
+    }
+};
+
+// ============================================================================
+// INTERACTIVE INPUT HELPERS
+// ============================================================================
+
+/**
+ * Creates readline interface for user input
+ */
+function createReadline() {
+    return readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+}
+
+/**
+ * Prompts user for input with a question
+ */
+function question(rl, query) {
+    return new Promise(resolve => rl.question(query, resolve));
+}
+
+/**
+ * Displays available word bundles
+ */
+function displayBundles() {
+    console.log('\n📦 Available Name Bundles:\n');
+    const bundles = Object.keys(WORD_BUNDLES);
+    bundles.forEach((key, index) => {
+        const bundle = WORD_BUNDLES[key];
+        console.log(`  ${index + 1}. ${bundle.name}`);
+        console.log(`     ${bundle.description}`);
+        console.log(`     Words: ${bundle.prefixes.length} prefixes × ${bundle.suffixes.length} suffixes = ${bundle.prefixes.length * bundle.suffixes.length} combinations\n`);
+    });
+}
+
+/**
+ * Gets user's bundle selection
+ */
+async function selectBundle(rl) {
+    displayBundles();
+
+    while (true) {
+        const answer = await question(rl, '🎯 Select a bundle (1-6): ');
+        const selection = parseInt(answer.trim(), 10);
+
+        if (selection >= 1 && selection <= 6) {
+            const bundleKey = Object.keys(WORD_BUNDLES)[selection - 1];
+            const bundle = WORD_BUNDLES[bundleKey];
+            console.log(`\n✅ Selected: ${bundle.name}\n`);
+            return bundleKey;
+        }
+
+        console.log('❌ Invalid selection. Please enter a number between 1 and 6.\n');
+    }
+}
+
+/**
+ * Gets number of aliases to create
+ */
+async function getAliasCount(rl) {
+    const defaultCount = parseInt(process.env.ALIAS_COUNT || '100', 10);
+
+    while (true) {
+        const answer = await question(rl, `📧 How many aliases to create? (1-500, default ${defaultCount}): `);
+        const trimmed = answer.trim();
+
+        // Use default if empty
+        if (!trimmed) {
+            console.log(`\n✅ Creating ${defaultCount} aliases\n`);
+            return defaultCount;
+        }
+
+        const count = parseInt(trimmed, 10);
+
+        if (count >= 1 && count <= 500) {
+            console.log(`\n✅ Creating ${count} aliases\n`);
+            return count;
+        }
+
+        console.log('❌ Invalid number. Please enter a value between 1 and 500.\n');
+    }
+}
 
 // ============================================================================
 // CONFIGURATION
@@ -75,51 +304,20 @@ const CONFIG = {
     zoneId: process.env.CLOUDFLARE_ZONE_ID,
     emailDomain: process.env.EMAIL_DOMAIN,
     destinationEmail: process.env.DESTINATION_EMAIL,
-    aliasCount: parseInt(process.env.ALIAS_COUNT || '100', 10),
     requestDelayMs: parseInt(process.env.REQUEST_DELAY_MS || '100', 10),
     randomSeed: process.env.RANDOM_SEED ? parseInt(process.env.RANDOM_SEED, 10) : Date.now(),
     dryRun: process.argv.includes('--dry-run'),
     maxRetries: 3,
     baseRetryDelayMs: 1000,
+    // These will be set interactively
+    selectedBundle: null,
+    aliasCount: null,
 };
-
-// ============================================================================
-// WORD LISTS FOR NAME GENERATION
-// ============================================================================
-
-const ADJECTIVES = [
-    'amber', 'azure', 'bright', 'calm', 'cosmic', 'crystal', 'echo', 'ember',
-    'frost', 'jade', 'lunar', 'misty', 'nova', 'ocean', 'pearl', 'quest',
-    'ruby', 'sage', 'shadow', 'silver', 'sky', 'solar', 'spark', 'star',
-    'storm', 'swift', 'thunder', 'velvet', 'violet', 'wild'
-];
-
-const FIRST_NAMES = [
-    'alex', 'aria', 'ash', 'avery', 'blake', 'casey', 'charlie', 'dakota',
-    'eden', 'ellis', 'finn', 'harper', 'jade', 'jordan', 'kai', 'leo',
-    'luna', 'max', 'morgan', 'neo', 'nova', 'ocean', 'parker', 'quinn',
-    'river', 'rowan', 'sage', 'sawyer', 'taylor', 'winter'
-];
-
-const NOUNS = [
-    'bear', 'dove', 'eagle', 'falcon', 'fox', 'hawk', 'lion', 'lynx',
-    'orca', 'otter', 'owl', 'panda', 'phoenix', 'raven', 'shark', 'tiger',
-    'whale', 'wolf', 'aurora', 'bay', 'breeze', 'canyon', 'cliff', 'cloud',
-    'comet', 'creek', 'delta', 'dune', 'echo', 'falls', 'forest', 'glacier',
-    'harbor', 'haven', 'horizon', 'meadow', 'mesa', 'moon', 'mountain', 'oasis',
-    'peak', 'pine', 'ridge', 'shore', 'star', 'stone', 'summit', 'tide',
-    'valley', 'wave'
-];
 
 // ============================================================================
 // SEEDED PSEUDO-RANDOM NUMBER GENERATOR
 // ============================================================================
 
-/**
- * Mulberry32 PRNG - Simple, fast, and deterministic seeded random number generator
- * @param {number} seed - Initial seed value
- * @returns {function(): number} Random number generator function (0-1)
- */
 function createSeededRandom(seed) {
     return function () {
         let t = seed += 0x6D2B79F5;
@@ -133,24 +331,14 @@ function createSeededRandom(seed) {
 // NAME GENERATION
 // ============================================================================
 
-/**
- * Generates a unique human-readable email alias name
- * @param {Set<string>} usedNames - Set of already generated names
- * @param {function} random - Random number generator function
- * @returns {string} Generated name in format "word1.word2"
- */
-function generateUniqueName(usedNames, random) {
+function generateUniqueName(usedNames, random, bundle) {
     const maxAttempts = 1000;
     let attempts = 0;
 
     while (attempts < maxAttempts) {
-        const useAdjective = random() > 0.5;
-        const firstPart = useAdjective
-            ? ADJECTIVES[Math.floor(random() * ADJECTIVES.length)]
-            : FIRST_NAMES[Math.floor(random() * FIRST_NAMES.length)];
-
-        const secondPart = NOUNS[Math.floor(random() * NOUNS.length)];
-        const name = `${firstPart}.${secondPart}`;
+        const prefix = bundle.prefixes[Math.floor(random() * bundle.prefixes.length)];
+        const suffix = bundle.suffixes[Math.floor(random() * bundle.suffixes.length)];
+        const name = `${prefix}.${suffix}`;
 
         if (!usedNames.has(name)) {
             usedNames.add(name);
@@ -160,22 +348,17 @@ function generateUniqueName(usedNames, random) {
         attempts++;
     }
 
-    throw new Error('Failed to generate unique name after 1000 attempts. Consider expanding word lists.');
+    throw new Error('Failed to generate unique name after 1000 attempts. Try a different bundle or reduce alias count.');
 }
 
-/**
- * Generates multiple unique email alias names
- * @param {number} count - Number of names to generate
- * @param {number} seed - Random seed for reproducibility
- * @returns {string[]} Array of unique alias names
- */
-function generateAliasNames(count, seed) {
+function generateAliasNames(count, seed, bundleKey) {
     const random = createSeededRandom(seed);
+    const bundle = WORD_BUNDLES[bundleKey];
     const usedNames = new Set();
     const names = [];
 
     for (let i = 0; i < count; i++) {
-        names.push(generateUniqueName(usedNames, random));
+        names.push(generateUniqueName(usedNames, random, bundle));
     }
 
     return names;
@@ -185,22 +368,10 @@ function generateAliasNames(count, seed) {
 // CLOUDFLARE API CLIENT
 // ============================================================================
 
-/**
- * Delays execution for specified milliseconds
- * @param {number} ms - Milliseconds to delay
- * @returns {Promise<void>}
- */
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/**
- * Creates an email routing rule in Cloudflare with retry logic
- * @param {string} aliasEmail - Full email address (local@domain.com)
- * @param {string} destinationEmail - Email to forward to
- * @param {number} retryCount - Current retry attempt
- * @returns {Promise<object>} API response with rule details
- */
 async function createEmailRoutingRule(aliasEmail, destinationEmail, retryCount = 0) {
     const url = `https://api.cloudflare.com/client/v4/zones/${CONFIG.zoneId}/email/routing/rules`;
 
@@ -234,7 +405,6 @@ async function createEmailRoutingRule(aliasEmail, destinationEmail, retryCount =
 
         const data = await response.json();
 
-        // Handle rate limiting
         if (response.status === 429) {
             if (retryCount >= CONFIG.maxRetries) {
                 throw new Error(`Rate limited after ${CONFIG.maxRetries} retries`);
@@ -245,7 +415,6 @@ async function createEmailRoutingRule(aliasEmail, destinationEmail, retryCount =
             return createEmailRoutingRule(aliasEmail, destinationEmail, retryCount + 1);
         }
 
-        // Handle server errors with retry
         if (response.status >= 500) {
             if (retryCount >= CONFIG.maxRetries) {
                 throw new Error(`Server error after ${CONFIG.maxRetries} retries: ${data.errors?.[0]?.message || 'Unknown error'}`);
@@ -256,13 +425,11 @@ async function createEmailRoutingRule(aliasEmail, destinationEmail, retryCount =
             return createEmailRoutingRule(aliasEmail, destinationEmail, retryCount + 1);
         }
 
-        // Handle client errors (no retry)
         if (!response.ok) {
             const errorMsg = data.errors?.[0]?.message || `HTTP ${response.status}`;
             throw new Error(errorMsg);
         }
 
-        // Validate response
         if (!data.success || !data.result?.id) {
             throw new Error('Invalid API response structure');
         }
@@ -274,7 +441,6 @@ async function createEmailRoutingRule(aliasEmail, destinationEmail, retryCount =
         };
 
     } catch (error) {
-        // Network errors - retry
         if (retryCount < CONFIG.maxRetries && (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT')) {
             const retryDelay = CONFIG.baseRetryDelayMs * Math.pow(2, retryCount);
             console.warn(`⚠️  Network error: ${error.message}. Retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${CONFIG.maxRetries})`);
@@ -290,10 +456,6 @@ async function createEmailRoutingRule(aliasEmail, destinationEmail, retryCount =
 // MAIN ORCHESTRATION
 // ============================================================================
 
-/**
- * Validates required environment variables
- * @throws {Error} If validation fails
- */
 function validateConfig() {
     const required = ['apiToken', 'zoneId', 'emailDomain', 'destinationEmail'];
     const missing = required.filter(key => !CONFIG[key]);
@@ -302,22 +464,15 @@ function validateConfig() {
         throw new Error(`Missing required environment variables: ${missing.map(k => k.toUpperCase().replace(/([A-Z])/g, '_$1')).join(', ')}`);
     }
 
-    if (CONFIG.aliasCount < 1 || CONFIG.aliasCount > 10000) {
-        throw new Error('ALIAS_COUNT must be between 1 and 10000');
-    }
-
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(CONFIG.destinationEmail)) {
         throw new Error('Invalid DESTINATION_EMAIL format');
     }
 }
 
-/**
- * Main execution function
- */
 async function main() {
     console.log('🚀 Cloudflare Email Routing Bulk Alias Creator\n');
+    console.log('   Interactive Privacy-Focused Edition\n');
 
     // Validate configuration
     try {
@@ -330,14 +485,32 @@ async function main() {
         console.error('  - EMAIL_DOMAIN');
         console.error('  - DESTINATION_EMAIL');
         console.error('\nOptional environment variables:');
-        console.error('  - ALIAS_COUNT (default: 100)');
         console.error('  - REQUEST_DELAY_MS (default: 100)');
         console.error('  - RANDOM_SEED (default: current timestamp)');
         process.exit(1);
     }
 
+    // Interactive mode (unless dry-run with no selection)
+    const rl = createReadline();
+
+    try {
+        // Select bundle
+        CONFIG.selectedBundle = await selectBundle(rl);
+
+        // Get alias count
+        CONFIG.aliasCount = await getAliasCount(rl);
+
+        rl.close();
+    } catch (error) {
+        rl.close();
+        console.error(`\n❌ Input error: ${error.message}\n`);
+        process.exit(1);
+    }
+
     // Display configuration
+    const selectedBundle = WORD_BUNDLES[CONFIG.selectedBundle];
     console.log('📋 Configuration:');
+    console.log(`   Bundle: ${selectedBundle.name}`);
     console.log(`   Domain: ${CONFIG.emailDomain}`);
     console.log(`   Destination: ${CONFIG.destinationEmail}`);
     console.log(`   Aliases to create: ${CONFIG.aliasCount}`);
@@ -347,7 +520,7 @@ async function main() {
 
     // Generate alias names
     console.log('🎲 Generating random alias names...');
-    const aliasNames = generateAliasNames(CONFIG.aliasCount, CONFIG.randomSeed);
+    const aliasNames = generateAliasNames(CONFIG.aliasCount, CONFIG.randomSeed, CONFIG.selectedBundle);
     console.log(`✅ Generated ${aliasNames.length} unique names\n`);
 
     if (CONFIG.dryRun) {
@@ -375,7 +548,8 @@ async function main() {
             alias: aliasEmail,
             ruleId: null,
             createdAt: new Date().toISOString(),
-            status: 'pending'
+            status: 'pending',
+            bundle: CONFIG.selectedBundle
         };
 
         try {
@@ -399,7 +573,6 @@ async function main() {
 
         results.push(result);
 
-        // Rate limiting delay (except for last item)
         if (i < aliasNames.length - 1) {
             await delay(CONFIG.requestDelayMs);
         }
@@ -407,7 +580,7 @@ async function main() {
 
     // Export results to JSON
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
-    const outputFileName = `email-aliases-${timestamp}.json`;
+    const outputFileName = `email-aliases-${CONFIG.selectedBundle}-${timestamp}.json`;
 
     try {
         await writeFile(outputFileName, JSON.stringify(results, null, 2), 'utf-8');
@@ -420,12 +593,12 @@ async function main() {
     console.log('═══════════════════════════════════════════════════════');
     console.log('📊 SUMMARY');
     console.log('═══════════════════════════════════════════════════════');
+    console.log(`🎨 Bundle: ${selectedBundle.name}`);
     console.log(`✅ Successful: ${successCount}`);
     console.log(`❌ Failed: ${failureCount}`);
     console.log(`📧 Total: ${results.length}`);
     console.log('═══════════════════════════════════════════════════════\n');
 
-    // Exit with appropriate code
     process.exit(failureCount > 0 ? 1 : 0);
 }
 

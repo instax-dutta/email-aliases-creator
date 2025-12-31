@@ -1,7 +1,7 @@
 {
   "name": "cloudflare-email-alias-creator",
-  "version": "1.0.0",
-  "description": "🚀 Bulk create human-readable email aliases with Cloudflare Email Routing - zero dependencies, production-grade",
+  "version": "2.0.0",
+  "description": "🚀 Interactive privacy-focused email alias generator with 6 themed word bundles - bulk create beautiful aliases using Cloudflare Email Routing - zero dependencies",
   "type": "module",
   "main": "create-email-aliases.js",
   "scripts": {

@@ -52,9 +52,11 @@ All aliases automatically forward to your main inbox. Perfect for:
 | ⚡ **Smart Rate Limiting** | Automatic delays to respect API limits |
 | 🔄 **Auto-Retry Logic** | Exponential backoff for transient failures |
 | 🧪 **Dry Run Mode** | Preview aliases before creating them |
-| 📊 **JSON Export** | Complete audit trail with bundle info and timestamps |
+| 📊 **Dual Export** | JSON (with metadata) + TXT (one email per line) |
+| 🗑️ **Auto Cleanup** | Delete script removes tracking files after successful deletion |
+| 🔧 **JSON to TXT Converter** | Standalone utility to convert old JSON files |
 | 🚫 **Zero Dependencies** | Uses only Node.js native modules |
-| 🛠️ **Bonus Tools** | Credential tester and deletion script included |
+| 🛠️ **Bonus Tools** | Credential tester, deletion script, and file converter |
 
 ---
 
@@ -321,6 +323,91 @@ jade.harbor@domain.com
 ```
 
 **Filename includes bundle:** `email-aliases-{bundle}-{date}.json`
+
+### Output Files
+
+Every alias creation generates **TWO files** for maximum flexibility:
+
+#### 📊 JSON File (Complete Audit Trail)
+
+```
+email-aliases-privacy-guardian-2025-12-31.json
+```
+
+**Contains:**
+
+- Full alias email address
+- Cloudflare rule ID (for deletion)
+- Creation timestamp
+- Status (success/failed)
+- Bundle name used
+- Error messages (if any)
+
+**Use for:**
+
+- Tracking and deletion
+- Debugging failures
+- Audit trails
+- Programmatic access
+
+#### 📝 TXT File (Easy Copy-Paste)
+
+```
+email-aliases-privacy-guardian-2025-12-31.txt
+```
+
+**Contains:**
+
+- One email per line
+- Only successful aliases
+- Clean, simple format
+
+**Example:**
+
+```
+cipher.vault@domain.com
+ghost.proxy@domain.com
+stealth.sentinel@domain.com
+encrypted.shield@domain.com
+```
+
+**Use for:**
+
+- Quick copy-paste
+- Spreadsheet import
+- Password manager bulk import
+- Simple text editor viewing
+- Sharing with team members
+
+#### 🔧 Convert Old JSON Files
+
+Have old JSON files without TXT? Convert them:
+
+```bash
+node json-to-txt.js email-aliases-2025-12-31.json
+# Creates: email-aliases-2025-12-31.txt
+```
+
+#### 🗑️ Automatic Cleanup
+
+The delete script now automatically removes tracking files:
+
+```bash
+node delete-email-aliases.js email-aliases-privacy-guardian-2025-12-31.json
+
+# After successful deletion:
+🗑️  Cleaned up: email-aliases-privacy-guardian-2025-12-31.json
+🗑️  Cleaned up: email-aliases-privacy-guardian-2025-12-31.txt
+
+✅ All aliases deleted and tracking files removed!
+```
+
+**Safety features:**
+
+- Only deletes files if ALL aliases deleted successfully
+- Keeps files if any failures occur (for retry)
+- Deletes both JSON and TXT automatically
+- Graceful handling if TXT doesn't exist
 
 ---
 

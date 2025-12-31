@@ -5,6 +5,7 @@
 
 # Output files (contains alias mappings)
 email-aliases-*.json
+email-aliases-*.txt
 
 # Node modules
 node_modules/

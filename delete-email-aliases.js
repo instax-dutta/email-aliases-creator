@@ -238,6 +238,32 @@ async function main() {
     console.log(`📧 Total: ${deletableAliases.length}`);
     console.log('═══════════════════════════════════════════════════════\n');
 
+    // Clean up JSON and TXT files if deletion was successful
+    if (successCount > 0 && failureCount === 0) {
+        try {
+            const { unlink } = await import('fs/promises');
+            const { existsSync } = await import('fs');
+
+            // Delete JSON file
+            await unlink(inputFile);
+            console.log(`🗑️  Cleaned up: ${inputFile}`);
+
+            // Delete corresponding TXT file if it exists
+            const txtFile = inputFile.replace('.json', '.txt');
+            if (existsSync(txtFile)) {
+                await unlink(txtFile);
+                console.log(`🗑️  Cleaned up: ${txtFile}`);
+            }
+
+            console.log('\n✅ All aliases deleted and tracking files removed!\n');
+        } catch (error) {
+            console.warn(`\n⚠️  Could not delete tracking files: ${error.message}`);
+            console.warn('   You may want to manually delete them.\n');
+        }
+    } else if (failureCount > 0) {
+        console.log('⚠️  Some aliases failed to delete. Keeping JSON file for retry.\n');
+    }
+
     process.exit(failureCount > 0 ? 1 : 0);
 }
 

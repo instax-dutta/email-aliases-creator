@@ -581,12 +581,27 @@ async function main() {
     // Export results to JSON
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
     const outputFileName = `email-aliases-${CONFIG.selectedBundle}-${timestamp}.json`;
+    const txtFileName = `email-aliases-${CONFIG.selectedBundle}-${timestamp}.txt`;
 
     try {
         await writeFile(outputFileName, JSON.stringify(results, null, 2), 'utf-8');
-        console.log(`\n💾 Results exported to: ${outputFileName}\n`);
+        console.log(`\n💾 Results exported to: ${outputFileName}`);
     } catch (error) {
-        console.error(`\n❌ Failed to write output file: ${error.message}\n`);
+        console.error(`\n❌ Failed to write JSON file: ${error.message}`);
+    }
+
+    // Export simple text file with one email per line (successful aliases only)
+    try {
+        const successfulAliases = results
+            .filter(r => r.status === 'success')
+            .map(r => r.alias)
+            .join('\n');
+
+        await writeFile(txtFileName, successfulAliases + '\n', 'utf-8');
+        console.log(`📝 Email list exported to: ${txtFileName}`);
+        console.log(`   (${successCount} emails, one per line)\n`);
+    } catch (error) {
+        console.error(`\n❌ Failed to write TXT file: ${error.message}\n`);
     }
 
     // Summary

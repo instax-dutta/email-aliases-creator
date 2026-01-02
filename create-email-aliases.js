@@ -357,12 +357,27 @@ function generateToon(results, metadata) {
 }
 
 // ============================================================================
+// MULTI-DOMAIN ZONE ID MAPPING
+// ============================================================================
+// Add your domains and their zone IDs here for seamless multi-domain support
+// No need for multiple .env files!
+const ZONE_IDS = {
+    // Example: 'example.com': 'your_zone_id_here',
+    // Example: 'another.com': 'another_zone_id_here',
+};
+
+// Auto-detect zone ID based on EMAIL_DOMAIN
+function getZoneId(domain) {
+    return ZONE_IDS[domain] || process.env.CLOUDFLARE_ZONE_ID;
+}
+
+// ============================================================================
 // CONFIGURATION
 // ============================================================================
 
 const CONFIG = {
     apiToken: process.env.CLOUDFLARE_API_TOKEN,
-    zoneId: process.env.CLOUDFLARE_ZONE_ID,
+    zoneId: getZoneId(process.env.EMAIL_DOMAIN),
     emailDomain: process.env.EMAIL_DOMAIN,
     destinationEmail: process.env.DESTINATION_EMAIL,
     requestDelayMs: parseInt(process.env.REQUEST_DELAY_MS || '100', 10),
@@ -640,10 +655,11 @@ async function main() {
     }
 
     // Export results to JSON
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
-    const outputFileName = `email-aliases-${CONFIG.selectedBundle}-${timestamp}.json`;
-    const txtFileName = `email-aliases-${CONFIG.selectedBundle}-${timestamp}.txt`;
-    const toonFileName = `email-aliases-${CONFIG.selectedBundle}-${timestamp}.toon`;
+    // Use domain-based naming for simpler file management
+    const domainSlug = CONFIG.emailDomain.replace(/\./g, '-'); // aeglyn.site -> aeglyn-site
+    const outputFileName = `${domainSlug}.json`;
+    const txtFileName = `${domainSlug}.txt`;
+    const toonFileName = `${domainSlug}.toon`;
 
     try {
         await writeFile(outputFileName, JSON.stringify(results, null, 2), 'utf-8');

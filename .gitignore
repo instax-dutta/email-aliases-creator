@@ -3,10 +3,14 @@
 .env.local
 .env.*.local
 
-# Output files (contains alias mappings)
-email-aliases-*.json
-email-aliases-*.txt
-email-aliases-*.toon
+# Output files (generated aliases - named after domain)
+*.json
+*.txt
+*.toon
+
+# Exclude example and config files
+!.env.example
+!package.json
 
 # Password files (CRITICAL - contains plaintext passwords!)
 *-with-passwords.*

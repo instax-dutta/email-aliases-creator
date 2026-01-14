@@ -828,7 +828,31 @@ async function runCreationFlow(rl) {
     const toonFileName = `${domainSlug}.toon`;
 
     try {
-        await writeFile(outputFileName, JSON.stringify(results, null, 2), 'utf-8');
+        let finalResults = results;
+        if (existsSync(outputFileName)) {
+            const existingContent = await readFile(outputFileName, 'utf-8');
+            const existingJson = JSON.parse(existingContent);
+            if (Array.isArray(existingJson)) {
+                finalResults = [...existingJson, ...results];
+            } else if (existingJson.results || existingJson.aliases) {
+                // If using the robust object structure
+                const prevAliases = existingJson.results || existingJson.aliases;
+                finalResults = {
+                    ...existingJson,
+                    results: [...prevAliases, ...results],
+                    metadata: { ...existingJson.metadata, updated_at: new Date().toISOString() }
+                };
+            }
+        } else {
+            // For new files, prefer strict array or the object wrapper?
+            // Let's stick to array for simplicity unless passwords upgrade it later, 
+            // but user seems to have both. Let's output array by default for new files 
+            // to keep it simple, or stick to what we had.
+            // EDIT: 'updateFilesWithPasswords' converts to object structure. 
+            // So if we write array here, it gets upgraded later. That works.
+        }
+
+        await writeFile(outputFileName, JSON.stringify(finalResults, null, 2), 'utf-8');
         console.log(`\n💾 Results exported to: ${outputFileName}`);
     } catch (e) {
         console.error(`\n❌ Failed to write JSON file: ${e.message}`);
@@ -836,12 +860,27 @@ async function runCreationFlow(rl) {
 
     try {
         const successfulAliases = results.filter(r => r.status === 'success').map(r => r.alias);
-        await writeFile(txtFileName, successfulAliases.join('\n') + '\n', 'utf-8');
-        console.log(`📝 Email list exported to: ${txtFileName}`);
+
+        let writeMode = 'w'; // default write
+        let contentToWrite = successfulAliases.join('\n') + '\n';
+
+        if (existsSync(txtFileName)) {
+            const existingTxt = await readFile(txtFileName, 'utf-8');
+            // Check if last line has newline
+            const prefix = existingTxt.endsWith('\n') ? '' : '\n';
+            contentToWrite = prefix + contentToWrite;
+            writeMode = 'a'; // append
+            await writeFile(txtFileName, contentToWrite, { flag: 'a' });
+        } else {
+            await writeFile(txtFileName, contentToWrite, 'utf-8');
+        }
+
+        console.log(`📝 Email list exported/updated: ${txtFileName}`);
 
         // AUTOMATIC PASSWORD GENERATION
         if (successfulAliases.length > 0) {
             const credentials = generateUniquePasswords(successfulAliases);
+            // This function handles the "reading existing + merging" logic internally now
             await updateFilesWithPasswords(domainSlug, credentials);
         }
 
@@ -860,8 +899,14 @@ async function runCreationFlow(rl) {
             failureCount,
             timestamp: new Date().toISOString()
         });
-        await writeFile(toonFileName, toonContent, 'utf-8');
-        console.log(`🤖 TOON exported to: ${toonFileName}\n`);
+
+        if (existsSync(toonFileName)) {
+            await writeFile(toonFileName, '\n\n' + toonContent, { flag: 'a' });
+            console.log(`🤖 TOON appended to: ${toonFileName}\n`);
+        } else {
+            await writeFile(toonFileName, toonContent, 'utf-8');
+            console.log(`🤖 TOON exported to: ${toonFileName}\n`);
+        }
     } catch (e) {
         console.error(`\n❌ Failed to write TOON file: ${e.message}\n`);
     }

@@ -147,6 +147,31 @@ async function deleteEmailRoutingRule(ruleId, retryCount = 0) {
 // MAIN
 // ============================================================================
 
+/**
+ * Automatically fetches the Zone ID from Cloudflare based on the domain name.
+ */
+async function fetchZoneIdByName(domain) {
+    if (!CONFIG.apiToken) return null;
+
+    const url = `https://api.cloudflare.com/client/v4/zones?name=${domain}`;
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${CONFIG.apiToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+        if (data.success && data.result.length > 0) {
+            return data.result[0].id;
+        }
+        return null;
+    } catch (error) {
+        console.warn(`⚠️  Automatic zone discovery failed: ${error.message}`);
+        return null;
+    }
+}
+
 async function main() {
     console.log('🗑️  Cloudflare Email Routing Alias Deletion Script\n');
 
@@ -158,17 +183,7 @@ async function main() {
         console.error('Usage:');
         console.error('  node delete-email-aliases.js <json-file> [--dry-run]\n');
         console.error('Example:');
-        console.error('  node delete-email-aliases.js email-aliases-2025-12-31.json');
-        console.error('  node delete-email-aliases.js email-aliases-2025-12-31.json --dry-run\n');
-        process.exit(1);
-    }
-
-    // Validate config
-    if (!CONFIG.apiToken || !CONFIG.zoneId) {
-        console.error('❌ Error: Missing required environment variables\n');
-        console.error('Required:');
-        console.error('  - CLOUDFLARE_API_TOKEN');
-        console.error('  - CLOUDFLARE_ZONE_ID\n');
+        console.error('  node delete-email-aliases.js aeglyn-site.json\n');
         process.exit(1);
     }
 
@@ -179,6 +194,30 @@ async function main() {
         aliases = JSON.parse(fileContent);
     } catch (error) {
         console.error(`❌ Error reading file: ${error.message}\n`);
+        process.exit(1);
+    }
+
+    // Auto-resolve Zone ID if missing
+    if (!CONFIG.zoneId && aliases.length > 0 && aliases[0].alias) {
+        const domain = aliases[0].alias.split('@')[1];
+        if (domain) {
+            process.stdout.write(`🔍 Resolving Zone ID for ${domain}... `);
+            const autoId = await fetchZoneIdByName(domain);
+            if (autoId) {
+                CONFIG.zoneId = autoId;
+                console.log(`✅ Found: ${autoId.substring(0, 8)}...`);
+            } else {
+                console.log('❌ Failed');
+            }
+        }
+    }
+
+    // Validate config
+    if (!CONFIG.apiToken || !CONFIG.zoneId) {
+        console.error('❌ Error: Missing required credentials\n');
+        console.error('Required:');
+        console.error('  - CLOUDFLARE_API_TOKEN in .env');
+        console.error('  - CLOUDFLARE_ZONE_ID in .env (or auto-resolved from domain)\n');
         process.exit(1);
     }
 

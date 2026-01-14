@@ -167,19 +167,46 @@ async function main() {
         process.exit(1);
     }
 
-    // Zone ID mapping for multiple domains
-    // Add your domains here - same as in create-email-aliases.js
-    const ZONE_IDS = {
-        // Example: 'example.com': 'your_zone_id_here',
-        // Example: 'another.com': 'another_zone_id_here',
-    };
+    /**
+     * Automatically fetches the Zone ID from Cloudflare based on the domain name.
+     */
+    async function fetchZoneIdByName(domain) {
+        const url = `https://api.cloudflare.com/client/v4/zones?name=${domain}`;
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+            if (data.success && data.result.length > 0) {
+                return data.result[0].id;
+            }
+            return null;
+        } catch (error) {
+            console.warn(`⚠️  Automatic zone discovery failed: ${error.message}`);
+            return null;
+        }
+    }
 
-    // Get zone ID for target domain
-    const zoneId = ZONE_IDS[targetDomain] || process.env.CLOUDFLARE_ZONE_ID;
+    // Auto-detect zone ID based on domain
+    let zoneId = process.env.CLOUDFLARE_ZONE_ID;
+
+    if (!zoneId || targetDomain !== process.env.EMAIL_DOMAIN) {
+        process.stdout.write(`🔍 Resolving Zone ID for ${targetDomain}... `);
+        const autoId = await fetchZoneIdByName(targetDomain);
+        if (autoId) {
+            zoneId = autoId;
+            console.log(`✅ Found: ${zoneId.substring(0, 8)}...`);
+        } else {
+            console.log('❌ Failed');
+        }
+    }
 
     if (!zoneId) {
         console.error(`❌ Error: No zone ID found for ${targetDomain}`);
-        console.error('   Add it to ZONE_IDS at the top of this script\n');
+        console.error('   Please set CLOUDFLARE_ZONE_ID in .env or ensure your token has Zone:Read permissions.\n');
         process.exit(1);
     }
 

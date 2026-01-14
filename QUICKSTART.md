@@ -38,16 +38,18 @@ node --version
 # Run the script
 node create-email-aliases.js
 
-# The script will ask you:
-# 1. Which bundle? (1-6)
-# 2. How many aliases? (1-500)
+# The script will now:
+# 1. 🔍 Automatically resolve your Zone ID (no manual entry needed!) 
+# 2. Ask you which bundle? (1-6)
+# 3. Ask you how many aliases? (1-500)
 
 # Example session:
-🎯 Select a bundle (1-6): 1
-✅ Selected: 🛡️ Privacy Guardian
+🔍 Resolving Zone ID for oneshotai.site... ✅ Found: e34bae9...
+🎯 Select a bundle (1-6): 5
+✅ Selected: 🚀 Cosmic Explorer
 
-📧 How many aliases to create? (1-500, default 100): 50
-✅ Creating 50 aliases
+📧 How many aliases to create? (1-500, default 100): 10
+✅ Creating 10 aliases
 ```
 
 ### Dry Run (Preview)
@@ -89,10 +91,10 @@ node test-credentials.js
 
 ```bash
 # Dry run deletion
-node delete-email-aliases.js email-aliases-privacy-guardian-2025-12-31.json --dry-run
+node delete-email-aliases.js oneshotai-site.json --dry-run
 
-# Actually delete
-node delete-email-aliases.js email-aliases-privacy-guardian-2025-12-31.json
+# Actually delete (auto-resolves Zone ID from the file!)
+node delete-email-aliases.js oneshotai-site.json
 ```
 
 ### NPM Shortcuts
@@ -128,8 +130,9 @@ EMAIL_DOMAIN=yourdomain.com         # Your domain
 DESTINATION_EMAIL=inbox@gmail.com   # Where emails forward to
 
 # Optional
-REQUEST_DELAY_MS=100                # Delay between requests
-RANDOM_SEED=12345                   # For reproducibility
+CLOUDFLARE_ZONE_ID=...              # Not needed! (Script finds it)
+REQUEST_DELAY_MS=1000               # Use 1000ms if hitting rate limits
+RANDOM_SEED=12345                   # For reproducible names
 ```
 
 **Note:** `ALIAS_COUNT` is now interactive (prompted at runtime)
@@ -162,14 +165,15 @@ curl -X GET "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}" \
 
 ---
 
-## Output Files
+## Output Formats 🚀
 
-| File Pattern | Contains |
-|-------------|----------|
-| `email-aliases-{bundle}-{date}.json` | Created aliases with rule IDs |
-| Bundle name in filename | Tracks which theme was used |
+Every run now generates **three** files named after your domain:
 
-**Example:** `email-aliases-privacy-guardian-2025-12-31.json`
+| File Type | Purpose | Example |
+|-----------|---------|---------|
+| **JSON** | Full data with API IDs | `oneshotai-site.json` |
+| **TXT** | Simple list (one per line) | `oneshotai-site.txt` |
+| **TOON** | **LLM-Optimized** (30-60% tokens) | `oneshotai-site.toon` |
 
 ---
 
@@ -219,14 +223,9 @@ npm start
 # Choose bundle: 1
 # Count: 100
 
-# 5. Check results
-ls -lh email-aliases-*.json
-cat email-aliases-privacy-guardian-2025-12-31.json
-
-# 6. (Optional) Try different bundle
-npm start
-# Choose bundle: 2 (Tech Wizard)
-# Count: 50
+# 4. Check results (Domain-based naming)
+ls oneshotai-site.*
+# oneshotai-site.json oneshotai-site.toon oneshotai-site.txt
 ```
 
 ---

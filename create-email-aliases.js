@@ -357,18 +357,33 @@ function generateToon(results, metadata) {
 }
 
 // ============================================================================
-// MULTI-DOMAIN ZONE ID MAPPING
+// AUTOMATIC ZONE DISCOVERY
 // ============================================================================
-// Add your domains and their zone IDs here for seamless multi-domain support
-// No need for multiple .env files!
-const ZONE_IDS = {
-    // Example: 'example.com': 'your_zone_id_here',
-    // Example: 'another.com': 'another_zone_id_here',
-};
 
-// Auto-detect zone ID based on EMAIL_DOMAIN
-function getZoneId(domain) {
-    return ZONE_IDS[domain] || process.env.CLOUDFLARE_ZONE_ID;
+/**
+ * Automatically fetches the Zone ID from Cloudflare based on the domain name.
+ * Requires an API token with Zone:Read permissions.
+ */
+async function fetchZoneIdByName(domain) {
+    if (!process.env.CLOUDFLARE_API_TOKEN) return null;
+
+    const url = `https://api.cloudflare.com/client/v4/zones?name=${domain}`;
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+        if (data.success && data.result.length > 0) {
+            return data.result[0].id;
+        }
+        return null;
+    } catch (error) {
+        console.warn(`⚠️  Automatic zone discovery failed: ${error.message}`);
+        return null;
+    }
 }
 
 // ============================================================================
@@ -377,7 +392,7 @@ function getZoneId(domain) {
 
 const CONFIG = {
     apiToken: process.env.CLOUDFLARE_API_TOKEN,
-    zoneId: getZoneId(process.env.EMAIL_DOMAIN),
+    zoneId: process.env.CLOUDFLARE_ZONE_ID,
     emailDomain: process.env.EMAIL_DOMAIN,
     destinationEmail: process.env.DESTINATION_EMAIL,
     requestDelayMs: parseInt(process.env.REQUEST_DELAY_MS || '100', 10),
@@ -389,6 +404,23 @@ const CONFIG = {
     selectedBundle: null,
     aliasCount: null,
 };
+
+/**
+ * Initializes configuration, resolving Zone ID if necessary.
+ */
+async function initializeConfig() {
+    if (!CONFIG.zoneId && CONFIG.emailDomain) {
+        process.stdout.write(`🔍 Resolving Zone ID for ${CONFIG.emailDomain}... `);
+        const autoId = await fetchZoneIdByName(CONFIG.emailDomain);
+        if (autoId) {
+            CONFIG.zoneId = autoId;
+            console.log(`✅ Found: ${autoId.substring(0, 8)}...`);
+        } else {
+            console.log('❌ Failed');
+        }
+    }
+}
+
 
 // ============================================================================
 // SEEDED PSEUDO-RANDOM NUMBER GENERATOR
@@ -482,18 +514,20 @@ async function createEmailRoutingRule(aliasEmail, destinationEmail, retryCount =
         const data = await response.json();
 
         if (response.status === 429) {
+            const errorMsg = data.errors?.[0]?.message || 'Rate limited';
             if (retryCount >= CONFIG.maxRetries) {
-                throw new Error(`Rate limited after ${CONFIG.maxRetries} retries`);
+                throw new Error(`Rate limited after ${CONFIG.maxRetries} retries: ${errorMsg}`);
             }
             const retryDelay = CONFIG.baseRetryDelayMs * Math.pow(2, retryCount);
-            console.warn(`⚠️  Rate limited. Retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${CONFIG.maxRetries})`);
+            console.warn(`⚠️  Cloudflare says: "${errorMsg}". Retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${CONFIG.maxRetries})`);
             await delay(retryDelay);
             return createEmailRoutingRule(aliasEmail, destinationEmail, retryCount + 1);
         }
 
         if (response.status >= 500) {
+            const errorMsg = data.errors?.[0]?.message || `HTTP ${response.status}`;
             if (retryCount >= CONFIG.maxRetries) {
-                throw new Error(`Server error after ${CONFIG.maxRetries} retries: ${data.errors?.[0]?.message || 'Unknown error'}`);
+                throw new Error(`Server error after ${CONFIG.maxRetries} retries: ${errorMsg}`);
             }
             const retryDelay = CONFIG.baseRetryDelayMs * Math.pow(2, retryCount);
             console.warn(`⚠️  Server error (${response.status}). Retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${CONFIG.maxRetries})`);
@@ -503,7 +537,7 @@ async function createEmailRoutingRule(aliasEmail, destinationEmail, retryCount =
 
         if (!response.ok) {
             const errorMsg = data.errors?.[0]?.message || `HTTP ${response.status}`;
-            throw new Error(errorMsg);
+            throw new Error(`Cloudflare API Error: ${errorMsg}`);
         }
 
         if (!data.success || !data.result?.id) {
@@ -550,6 +584,9 @@ async function main() {
     console.log('🚀 Cloudflare Email Routing Bulk Alias Creator\n');
     console.log('   Interactive Privacy-Focused Edition\n');
 
+    // Auto-resolve Zone ID if possible
+    await initializeConfig();
+
     // Validate configuration
     try {
         validateConfig();
@@ -557,10 +594,11 @@ async function main() {
         console.error(`❌ Configuration error: ${error.message}\n`);
         console.error('Required environment variables:');
         console.error('  - CLOUDFLARE_API_TOKEN');
-        console.error('  - CLOUDFLARE_ZONE_ID');
         console.error('  - EMAIL_DOMAIN');
         console.error('  - DESTINATION_EMAIL');
+        console.error('\nNote: CLOUDFLARE_ZONE_ID is optional if the domain is correctly set.');
         console.error('\nOptional environment variables:');
+        console.error('  - CLOUDFLARE_ZONE_ID');
         console.error('  - REQUEST_DELAY_MS (default: 100)');
         console.error('  - RANDOM_SEED (default: current timestamp)');
         process.exit(1);

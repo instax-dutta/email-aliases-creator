@@ -161,49 +161,25 @@ For **seamless multi-domain support**, create ONE token for ALL your domains:
 
 **Why account-level?** One token manages all your domains - no need for multiple tokens or .env files!
 
-#### 🆔 Step 2: Get Your Zone IDs
+#### 🌐 Automatic Multi-Domain Workflow
 
-For each domain you want to use:
+This script features **Zero-Hassle Multi-Domain Discovery**. You no longer need to find or map hexadecimal Zone IDs manually.
 
-1. **Cloudflare Dashboard** → Select domain
-2. **Overview** → Right sidebar **"API"** section
-3. Copy the **Zone ID**
+**How to switch domains:**
 
-#### 🌐 Step 3: Add Domains to Scripts (Multi-Domain Support)
-
-To use **multiple domains**, simply add them to the `ZONE_IDS` mapping in the scripts:
-
-**In `create-email-aliases.js` (around line 365):**
-
-```javascript
-const ZONE_IDS = {
-  'example.com': 'your_zone_id_here',
-  'another.com': 'another_zone_id_here',
-  'aeglyn.site': process.env.CLOUDFLARE_ZONE_ID, // Uses .env value
-};
-```
-
-**In `cleanup-generated-aliases.js` (around line 170):**
-
-```javascript
-const ZONE_IDS = {
-  'example.com': 'your_zone_id_here',
-  'another.com': 'another_zone_id_here',
-};
-```
-
-**That's it!** Now you can switch domains just by changing `EMAIL_DOMAIN` in `.env`:
+1. Just change the `EMAIL_DOMAIN` in your `.env` file.
+2. Run any script.
+3. The script will automatically search Cloudflare for the correct `Zone ID` matching your domain.
 
 ```bash
-# Switch to example.com
+# Switch to another domain
 EMAIL_DOMAIN=example.com
-DESTINATION_EMAIL=inbox@gmail.com
 
-# Run scripts - automatically uses correct zone ID!
+# Run scripts - auto-resolves correctly!
 node create-email-aliases.js
 ```
 
-**No .env file swapping needed!** The scripts auto-detect the zone ID based on `EMAIL_DOMAIN`.
+**Note:** This requires your API Token to have the `Zone:Read` permission (Steps 1-2 above).
 
 ### 3️⃣ Test Your Credentials
 

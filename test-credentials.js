@@ -43,30 +43,32 @@ async function loadEnvFile() {
 await loadEnvFile();
 
 const apiToken = process.env.CLOUDFLARE_API_TOKEN;
-const zoneId = process.env.CLOUDFLARE_ZONE_ID;
+const emailDomain = process.env.EMAIL_DOMAIN;
+let zoneId = process.env.CLOUDFLARE_ZONE_ID;
 
 console.log('🔍 Testing Cloudflare Credentials\n');
 
-if (!apiToken || !zoneId) {
-    console.error('❌ Missing credentials in .env file\n');
+if (!apiToken) {
+    console.error('❌ Missing CLOUDFLARE_API_TOKEN in .env file\n');
     process.exit(1);
 }
 
-console.log(`🔑 API Token: ${apiToken.substring(0, 10)}...${apiToken.substring(apiToken.length - 4)}`);
-console.log(`🆔 Zone ID: ${zoneId}\n`);
-
-// Test 1: Verify API token
-console.log('Test 1: Verifying API token...');
-try {
-    const response = await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', {
+// Helper for API calls
+async function apiCall(url) {
+    const response = await fetch(url, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${apiToken}`,
             'Content-Type': 'application/json'
         }
     });
+    return { status: response.status, data: await response.json() };
+}
 
-    const data = await response.json();
+// Test 1: Verify API token
+console.log('Test 1: Verifying API token...');
+try {
+    const { status, data } = await apiCall('https://api.cloudflare.com/client/v4/user/tokens/verify');
 
     if (data.success) {
         console.log('✅ API token is valid');
@@ -74,36 +76,50 @@ try {
     } else {
         console.log('❌ API token verification failed');
         console.log('   Errors:', JSON.stringify(data.errors, null, 2));
+        process.exit(1);
     }
 } catch (error) {
     console.log(`❌ Failed to verify token: ${error.message}`);
+    process.exit(1);
 }
 
 console.log();
 
-// Test 2: Check zone access
-console.log('Test 2: Checking zone access...');
-try {
-    const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}`, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${apiToken}`,
-            'Content-Type': 'application/json'
+// Test 2: Auto-resolve Zone ID or Verify if manually set
+if (!zoneId && emailDomain) {
+    console.log(`Test 2: Auto-resolving Zone ID for ${emailDomain}...`);
+    try {
+        const { status, data } = await apiCall(`https://api.cloudflare.com/client/v4/zones?name=${emailDomain}`);
+        if (data.success && data.result.length > 0) {
+            zoneId = data.result[0].id;
+            console.log(`✅ Automatically found Zone ID: ${zoneId}`);
+        } else {
+            console.log('❌ Failed to resolve Zone ID automatically.');
+            console.log('   Make sure you have "Zone:Read" permission and the domain exists in your account.');
+            process.exit(1);
         }
-    });
-
-    const data = await response.json();
-
-    if (data.success) {
-        console.log('✅ Zone access is valid');
-        console.log(`   Zone Name: ${data.result.name}`);
-        console.log(`   Status: ${data.result.status}`);
-    } else {
-        console.log('❌ Zone access failed');
-        console.log('   Errors:', JSON.stringify(data.errors, null, 2));
+    } catch (error) {
+        console.log(`❌ Failed to resolve zone: ${error.message}`);
+        process.exit(1);
     }
-} catch (error) {
-    console.log(`❌ Failed to access zone: ${error.message}`);
+} else if (zoneId) {
+    console.log(`Test 2: Verifying manual Zone ID ${zoneId}...`);
+    try {
+        const { status, data } = await apiCall(`https://api.cloudflare.com/client/v4/zones/${zoneId}`);
+        if (data.success) {
+            console.log(`✅ Zone access is valid (${data.result.name})`);
+        } else {
+            console.log('❌ Manual Zone ID verification failed.');
+            console.log('   Errors:', JSON.stringify(data.errors, null, 2));
+            process.exit(1);
+        }
+    } catch (error) {
+        console.log(`❌ Failed to verify zone ID: ${error.message}`);
+        process.exit(1);
+    }
+} else {
+    console.error('❌ Error: Set either CLOUDFLARE_ZONE_ID or EMAIL_DOMAIN in .env\n');
+    process.exit(1);
 }
 
 console.log();
@@ -111,28 +127,20 @@ console.log();
 // Test 3: Check Email Routing permissions
 console.log('Test 3: Checking Email Routing permissions...');
 try {
-    const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/email/routing/rules`, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${apiToken}`,
-            'Content-Type': 'application/json'
-        }
-    });
-
-    const data = await response.json();
+    const { status, data } = await apiCall(`https://api.cloudflare.com/client/v4/zones/${zoneId}/email/routing/rules`);
 
     if (data.success) {
         console.log('✅ Email Routing access is valid');
         console.log(`   Existing rules: ${data.result?.length || 0}`);
     } else {
         console.log('❌ Email Routing access failed');
-        console.log('   Status:', response.status);
+        console.log('   Status:', status);
         console.log('   Errors:', JSON.stringify(data.errors, null, 2));
 
-        if (response.status === 403) {
+        if (status === 403) {
             console.log('\n⚠️  PERMISSION ISSUE:');
             console.log('   Your API token does not have Email Routing permissions.');
-            console.log('   Please create a new token with "Email Routing Rules" edit permissions.');
+            console.log('   Please check your token permissions in Cloudflare dashboard.');
         }
     }
 } catch (error) {
@@ -141,11 +149,6 @@ try {
 
 console.log('\n' + '='.repeat(60));
 console.log('📝 SUMMARY\n');
-console.log('If all tests passed, your credentials are correct.');
-console.log('If Test 3 failed with a 403 error, you need to:');
-console.log('  1. Go to https://dash.cloudflare.com/profile/api-tokens');
-console.log('  2. Create Token → Use "Edit zone email routing" template');
-console.log('  3. OR create custom token with these permissions:');
-console.log('     - Zone > Email Routing Rules > Edit');
-console.log('  4. Update CLOUDFLARE_API_TOKEN in your .env file');
+console.log('If all tests passed, your credentials are ready for use!');
+console.log('Automatic Zone Discovery is working ✅');
 console.log('='.repeat(60) + '\n');

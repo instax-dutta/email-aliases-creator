@@ -656,6 +656,87 @@ async function createEmailRoutingRule(aliasEmail, destinationEmail, retryCount =
 }
 
 // ============================================================================
+// UTILITIES: CONVERTERS & TESTS
+// ============================================================================
+
+async function runJsonToTxtConverter(rl) {
+    console.log('\n📝 JSON to TXT Converter\n');
+    let jsonFile = await question(rl, '📂 Enter path to JSON file (or press Enter for current domain): ');
+
+    if (!jsonFile.trim()) {
+        const domainSlug = CONFIG.emailDomain.replace(/\./g, '-');
+        jsonFile = `${domainSlug}.json`;
+    }
+
+    if (!existsSync(jsonFile)) {
+        console.error(`❌ Error: File not found: ${jsonFile}`);
+        return;
+    }
+
+    try {
+        const content = await readFile(jsonFile, 'utf-8');
+        const aliases = JSON.parse(content);
+
+        let list = [];
+        if (Array.isArray(aliases)) list = aliases;
+        else if (aliases.results) list = aliases.results;
+        else if (aliases.aliases) list = aliases.aliases;
+
+        const emails = list.filter(a => a.status === 'success' || a.email).map(a => a.alias || a.email);
+
+        if (emails.length === 0) {
+            console.error('❌ No usable aliases found in file.');
+            return;
+        }
+
+        const txtFile = jsonFile.replace('.json', '.txt');
+        await writeFile(txtFile, emails.join('\n') + '\n', 'utf-8');
+        console.log(`✅ Converted ${emails.length} emails to: ${txtFile}`);
+
+    } catch (e) {
+        console.error(`❌ Conversion failed: ${e.message}`);
+    }
+}
+
+async function runCredentialTest() {
+    console.log('\n🔍 Testing Cloudflare Credentials...\n');
+
+    // Test 1: Verify Token
+    try {
+        const response = await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', {
+            headers: { 'Authorization': `Bearer ${CONFIG.apiToken}` }
+        });
+        const data = await response.json();
+        if (data.success) console.log('✅ API token is valid');
+        else {
+            console.error('❌ API token invalid:', data.errors?.[0]?.message);
+            return;
+        }
+    } catch (e) { console.error(`❌ Token check failed: ${e.message}`); return; }
+
+    // Test 2: Zone ID
+    await initializeConfig();
+    if (CONFIG.zoneId) console.log(`✅ Zone ID resolved: ${CONFIG.zoneId}`);
+    else {
+        console.error('❌ Could not resolve Zone ID. Check permissions.');
+        return;
+    }
+
+    // Test 3: Email Routing Permissions
+    try {
+        const url = `https://api.cloudflare.com/client/v4/zones/${CONFIG.zoneId}/email/routing/rules`;
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${CONFIG.apiToken}` }
+        });
+        const data = await response.json();
+        if (data.success) console.log('✅ Email Routing permissions confirmed');
+        else console.error('❌ Email Routing access failed:', data.errors?.[0]?.message);
+    } catch (e) { console.error(`❌ Permission check failed: ${e.message}`); }
+
+    console.log('\n✨ Credential Test Complete\n');
+}
+
+// ============================================================================
 // MAIN ORCHESTRATION & MENU
 // ============================================================================
 
@@ -663,14 +744,10 @@ function validateConfig() {
     const required = ['apiToken', 'zoneId', 'emailDomain', 'destinationEmail'];
     const missing = required.filter(key => !CONFIG[key]);
 
-    if (missing.length > 0) {
-        throw new Error(`Missing required environment variables: ${missing.map(k => k.toUpperCase().replace(/([A-Z])/g, '_$1')).join(', ')}`);
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(CONFIG.destinationEmail)) {
-        throw new Error('Invalid DESTINATION_EMAIL format');
-    }
+    // Only throw if strictly creating aliases
+    // For general menu usage, we might allow missing Zone ID if auto-discovery works
+    if (!CONFIG.apiToken) throw new Error("Missing CLOUDFLARE_API_TOKEN");
+    if (!CONFIG.emailDomain) throw new Error("Missing EMAIL_DOMAIN");
 }
 
 async function runCreationFlow(rl) {
@@ -804,35 +881,54 @@ async function main() {
     console.log('🚀 Cloudflare Email Routing Suite\n');
     console.log('   Interactive Privacy-Focused Edition\n');
 
+    const rl = createReadline();
+
+    // 1. Configure Domain
+    const defaultDomain = CONFIG.emailDomain || '';
+    const domainInput = await question(rl, `🌐 Target Domain [${defaultDomain}]: `);
+    const newDomain = domainInput.trim() || defaultDomain;
+
+    if (newDomain !== CONFIG.emailDomain) {
+        CONFIG.emailDomain = newDomain;
+        CONFIG.zoneId = null; // Force re-discovery for new domain
+    }
+
+    // 2. Configure Destination
+    const defaultDest = CONFIG.destinationEmail || '';
+    const destInput = await question(rl, `📨 Destination Email [${defaultDest}]: `);
+    CONFIG.destinationEmail = destInput.trim() || defaultDest;
+
+    console.log(''); // spacer
+
+    // 3. Auto-resolve Creds
     await initializeConfig();
 
     try {
         validateConfig();
     } catch (error) {
         console.error(`❌ Configuration error: ${error.message}\n`);
-        console.log('Please check your .env file.');
+        console.log('Please check your .env file or inputs.');
         process.exit(1);
     }
-
-    const rl = createReadline();
 
     // MAIN MENU LOOP
     while (true) {
         console.log('\n🔵 MAIN MENU:');
+        console.log(`   (Domain: ${CONFIG.emailDomain})`);
         console.log('1. ✨ Create Aliases (includes Auto-Password Gen)');
         console.log('2. 🔐 Generate Passwords for Existing File');
         console.log('3. 🧹 Cleanup/Delete Aliases');
         console.log('4. 🧪 Test Credentials');
-        console.log('5. 🚪 Exit');
+        console.log('5. 📝 Convert JSON to TXT');
+        console.log('6. 🚪 Exit');
 
-        const choice = await question(rl, '\n👉 Select an option (1-5): ');
+        const choice = await question(rl, '\n👉 Select an option (1-6): ');
 
         if (choice.trim() === '1') {
             await runCreationFlow(rl);
-            break; // Exit after creation run
+            // Don't break here anymore, allow returning to menu
         } else if (choice.trim() === '2') {
-            // Trigger existing password generator logic via shell for simplicity
-            // or call internal logic if we fully ported it. Here we call internal.
+            // Internal password generation
             const domainSlug = CONFIG.emailDomain.replace(/\./g, '-');
             const txtFile = `${domainSlug}.txt`;
             if (existsSync(txtFile)) {
@@ -846,11 +942,18 @@ async function main() {
             }
         } else if (choice.trim() === '3') {
             console.log('Launching Cleanup Script...');
-            try { execSync('node cleanup-generated-aliases.js', { stdio: 'inherit' }); } catch (e) { }
+            // Pass current config to the child process so it uses the selected domain/zone
+            const envVars = {
+                ...process.env,
+                EMAIL_DOMAIN: CONFIG.emailDomain,
+                CLOUDFLARE_ZONE_ID: CONFIG.zoneId
+            };
+            try { execSync('node cleanup-generated-aliases.js', { stdio: 'inherit', env: envVars }); } catch (e) { }
         } else if (choice.trim() === '4') {
-            console.log('Launching Test Script...');
-            try { execSync('node test-credentials.js', { stdio: 'inherit' }); } catch (e) { }
+            await runCredentialTest();
         } else if (choice.trim() === '5') {
+            await runJsonToTxtConverter(rl);
+        } else if (choice.trim() === '6') {
             console.log('Bye! 👋');
             process.exit(0);
         } else {

@@ -301,6 +301,26 @@ async function main() {
         // Fetch all email routing rules for the zone
         const rules = await apiRequest(`/zones/${zoneId}/email/routing/rules`);
 
+        // Load local JSON tracking file for ground truth
+        let trackedAliases = new Set();
+        const domainSlug = targetDomain.replace(/\./g, '-');
+        const jsonFile = `${domainSlug}.json`;
+
+        if (existsSync(join(__dirname, jsonFile))) {
+            try {
+                const content = await readFile(join(__dirname, jsonFile), 'utf-8');
+                const json = JSON.parse(content);
+                // Handle both array and object formats
+                const list = Array.isArray(json) ? json : (json.results || json.aliases || []);
+                list.forEach(item => {
+                    if (item.alias) trackedAliases.add(item.alias.toLowerCase());
+                });
+                console.log(`📂 Loaded ${trackedAliases.size} tracked aliases from ${jsonFile}`);
+            } catch (e) {
+                console.warn(`⚠️  Could not read tracking file ${jsonFile}: ${e.message}`);
+            }
+        }
+
         // Filter for target domain and generated aliases
         const generatedAliases = rules
             .filter(rule => {
@@ -308,7 +328,13 @@ async function main() {
                 if (!email) return false;
 
                 const domain = email.split('@')[1];
-                return domain === targetDomain && isGeneratedAlias(email);
+                if (domain !== targetDomain) return false;
+
+                // CRITERIA 1: It is in our local tracking file (100% confidence)
+                if (trackedAliases.has(email.toLowerCase())) return true;
+
+                // CRITERIA 2: It matches our dictionary pattern (Fallback for lost files)
+                return isGeneratedAlias(email);
             })
             .map(rule => ({
                 id: rule.id,

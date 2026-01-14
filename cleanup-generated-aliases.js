@@ -45,24 +45,110 @@ const WORD_BUNDLES = {
         ]
     },
     'tech-wizard': {
-        prefixes: ['quantum', 'cyber', 'nano', 'micro', 'mega', 'giga', 'tera', 'ultra', 'hyper', 'super', 'meta', 'proto', 'neo', 'next', 'future', 'smart', 'intel', 'logic', 'data', 'info', 'net', 'web', 'digital', 'virtual', 'cloud', 'matrix', 'binary', 'code', 'pixel', 'byte', 'bit', 'cache', 'buffer', 'stream', 'flow', 'flux', 'pulse', 'wave', 'signal', 'beacon', 'radar', 'sonar', 'laser', 'photon', 'electron', 'neutron', 'proton', 'atom', 'nucleus', 'core', 'chip', 'circuit', 'node', 'network', 'system', 'protocol', 'algorithm', 'function', 'method', 'process', 'thread', 'stack', 'queue', 'array', 'vector', 'matrix', 'tensor', 'graph', 'tree'],
-        suffixes: ['tech', 'lab', 'core', 'hub', 'net', 'web', 'cloud', 'node', 'link', 'port', 'gate', 'zone', 'realm', 'space', 'sphere', 'domain', 'field', 'matrix', 'grid', 'mesh', 'network', 'system', 'platform', 'engine', 'drive', 'force', 'power', 'energy', 'flux', 'flow', 'stream', 'wave', 'pulse', 'signal', 'beacon', 'tower', 'station', 'terminal', 'interface', 'dashboard', 'console', 'panel', 'screen', 'display', 'monitor', 'scanner', 'sensor', 'detector', 'analyzer', 'processor', 'compiler', 'parser', 'interpreter', 'debugger', 'optimizer', 'enhancer', 'booster', 'accelerator', 'amplifier', 'multiplier', 'generator', 'creator', 'builder', 'maker', 'forge', 'factory', 'workshop', 'studio']
+        prefixes: [
+            'binary', 'quantum', 'neural', 'cyber', 'digital', 'virtual', 'pixel',
+            'byte', 'nano', 'micro', 'macro', 'meta', 'proto', 'core', 'kernel',
+            'daemon', 'thread', 'async', 'sync', 'parallel', 'vector', 'matrix',
+            'logic', 'boolean', 'algorithm', 'regex', 'syntax', 'compile', 'runtime',
+            'stack', 'heap', 'cache', 'buffer', 'stream', 'pipeline', 'packet',
+            'protocol', 'network', 'mesh', 'grid', 'cloud', 'edge', 'fog',
+            'data', 'crypto', 'hash', 'token', 'session', 'instance', 'module',
+            'script', 'lambda', 'delta', 'alpha', 'beta', 'gamma', 'omega'
+        ],
+        suffixes: [
+            'bit', 'byte', 'node', 'core', 'chip', 'circuit', 'gate', 'port',
+            'socket', 'thread', 'process', 'daemon', 'service', 'worker', 'agent',
+            'bot', 'proxy', 'server', 'client', 'host', 'mesh', 'grid',
+            'network', 'cluster', 'shard', 'partition', 'segment', 'block', 'chunk',
+            'packet', 'frame', 'payload', 'header', 'footer', 'wrapper', 'container',
+            'pod', 'instance', 'replica', 'mirror', 'cache', 'buffer', 'queue',
+            'stack', 'heap', 'tree', 'graph', 'array', 'vector', 'matrix',
+            'tensor', 'scalar', 'pointer', 'reference', 'handle', 'descriptor'
+        ]
     },
     'nature-zen': {
-        prefixes: ['zen', 'calm', 'peace', 'quiet', 'still', 'gentle', 'soft', 'mild', 'light', 'clear', 'pure', 'fresh', 'clean', 'natural', 'organic', 'green', 'eco', 'wild', 'forest', 'wood', 'tree', 'leaf', 'branch', 'root', 'seed', 'bloom', 'flower', 'petal', 'garden', 'meadow', 'grove', 'glade', 'clearing', 'valley', 'canyon', 'ravine', 'gorge', 'cliff', 'peak', 'summit', 'mountain', 'hill', 'ridge', 'slope', 'mesa', 'butte', 'plateau', 'plain', 'prairie', 'savanna', 'tundra', 'desert', 'oasis', 'spring', 'stream', 'creek', 'brook', 'river', 'lake', 'pond', 'pool', 'waterfall', 'cascade', 'rapids', 'ocean', 'sea', 'bay', 'cove', 'inlet', 'fjord'],
-        suffixes: ['zen', 'calm', 'peace', 'harmony', 'balance', 'flow', 'stream', 'creek', 'river', 'lake', 'pond', 'pool', 'spring', 'falls', 'cascade', 'rapids', 'wave', 'tide', 'shore', 'beach', 'coast', 'bay', 'cove', 'island', 'reef', 'coral', 'shell', 'pearl', 'sand', 'pebble', 'stone', 'rock', 'boulder', 'cliff', 'cave', 'grotto', 'canyon', 'valley', 'meadow', 'field', 'plain', 'prairie', 'savanna', 'tundra', 'desert', 'dune', 'oasis', 'grove', 'forest', 'woods', 'jungle', 'rainforest', 'canopy', 'understory', 'floor', 'trail', 'path', 'way', 'route', 'passage', 'bridge', 'crossing', 'ford', 'summit', 'peak', 'ridge', 'slope', 'hill']
+        prefixes: [
+            'alpine', 'amber', 'arctic', 'autumn', 'azure', 'breeze', 'calm',
+            'cascade', 'cedar', 'cloud', 'coral', 'crystal', 'dawn', 'dusk',
+            'earth', 'emerald', 'forest', 'frost', 'glacial', 'golden', 'jade',
+            'lunar', 'maple', 'marine', 'meadow', 'misty', 'moss', 'mountain',
+            'ocean', 'olive', 'opal', 'pacific', 'pearl', 'pebble', 'pine',
+            'quartz', 'rain', 'river', 'sage', 'sand', 'sapphire', 'sky',
+            'snow', 'solar', 'spring', 'stellar', 'stone', 'summer', 'sunset',
+            'thunder', 'tide', 'timber', 'topaz', 'valley', 'verdant', 'wild'
+        ],
+        suffixes: [
+            'bay', 'beach', 'brook', 'canyon', 'cave', 'cliff', 'cloud', 'coast',
+            'cove', 'creek', 'delta', 'dune', 'falls', 'field', 'fjord', 'forest',
+            'garden', 'glacier', 'grove', 'harbor', 'haven', 'hill', 'hollow', 'island',
+            'lake', 'lagoon', 'marsh', 'meadow', 'mesa', 'mist', 'mountain', 'oasis',
+            'ocean', 'pass', 'path', 'peak', 'pine', 'plain', 'pond', 'prairie',
+            'reef', 'ridge', 'river', 'rock', 'shore', 'spring', 'stone', 'stream',
+            'summit', 'trail', 'tree', 'tundra', 'vale', 'valley', 'view', 'water',
+            'wave', 'wild', 'wood', 'woods'
+        ]
     },
     'urban-legend': {
-        prefixes: ['neon', 'metro', 'urban', 'city', 'street', 'avenue', 'boulevard', 'plaza', 'square', 'district', 'quarter', 'block', 'corner', 'junction', 'intersection', 'crossing', 'station', 'terminal', 'depot', 'hub', 'center', 'core', 'downtown', 'uptown', 'midtown', 'downtown', 'subway', 'underground', 'tunnel', 'bridge', 'overpass', 'underpass', 'highway', 'freeway', 'expressway', 'parkway', 'boulevard', 'strip', 'row', 'alley', 'lane', 'drive', 'road', 'route', 'path', 'way', 'walk', 'promenade', 'pier', 'dock', 'wharf', 'port', 'harbor', 'marina', 'bay', 'waterfront', 'riverside', 'lakefront', 'beachfront', 'boardwalk', 'esplanade', 'arcade', 'gallery', 'passage', 'corridor', 'concourse', 'atrium', 'lobby', 'foyer'],
-        suffixes: ['street', 'avenue', 'boulevard', 'plaza', 'square', 'circle', 'court', 'place', 'terrace', 'drive', 'lane', 'road', 'way', 'walk', 'path', 'trail', 'route', 'alley', 'row', 'strip', 'block', 'district', 'quarter', 'zone', 'sector', 'area', 'region', 'precinct', 'ward', 'borough', 'neighborhood', 'community', 'village', 'town', 'city', 'metro', 'urban', 'downtown', 'uptown', 'midtown', 'central', 'north', 'south', 'east', 'west', 'station', 'terminal', 'depot', 'hub', 'center', 'point', 'node', 'nexus', 'junction', 'crossing', 'intersection', 'corner', 'edge', 'border', 'boundary', 'limit', 'frontier', 'outpost', 'enclave', 'haven', 'refuge', 'sanctuary', 'shelter', 'safe', 'house']
+        prefixes: [
+            'metro', 'urban', 'city', 'civic', 'town', 'local', 'central', 'downtown',
+            'uptown', 'midtown', 'subway', 'street', 'avenue', 'lane', 'alley',
+            'road', 'route', 'path', 'block', 'square', 'market', 'plaza', 'mall',
+            'shop', 'store', 'cafe', 'club', 'pub', 'bar', 'hotel', 'motel',
+            'inn', 'hostel', 'house', 'home', 'flat', 'apt', 'loft', 'studio',
+            'room', 'floor', 'level', 'zone', 'area', 'region', 'district', 'ward',
+            'sector', 'quarter', 'part', 'side', 'end', 'edge', 'limit', 'bound'
+        ],
+        suffixes: [
+            'city', 'town', 'ville', 'burg', 'pol', 'port', 'haven', 'beach',
+            'side', 'view', 'land', 'world', 'globe', 'sphere', 'orb', 'zone',
+            'area', 'region', 'place', 'spot', 'site', 'net', 'web', 'link',
+            'hub', 'node', 'point', 'base', 'camp', 'post', 'station', 'stop',
+            'depot', 'yard', 'park', 'garden', 'field', 'ground', 'lot', 'plot',
+            'space', 'room', 'hall', 'center', 'core', 'heart', 'soul', 'mind',
+            'life', 'style', 'way', 'mode', 'form', 'type', 'kind', 'sort'
+        ]
     },
     'cosmic-explorer': {
-        prefixes: ['star', 'solar', 'lunar', 'cosmic', 'astro', 'celestial', 'stellar', 'galactic', 'nebula', 'nova', 'super', 'hyper', 'ultra', 'mega', 'giga', 'quantum', 'infinity', 'eternal', 'immortal', 'infinite', 'endless', 'boundless', 'limitless', 'timeless', 'ageless', 'ancient', 'primordial', 'primal', 'original', 'first', 'alpha', 'omega', 'zenith', 'apex', 'peak', 'summit', 'pinnacle', 'acme', 'climax', 'culmination', 'meridian', 'equinox', 'solstice', 'eclipse', 'transit', 'conjunction', 'opposition', 'alignment', 'syzygy', 'occultation', 'perihelion', 'aphelion', 'perigee', 'apogee', 'ascending', 'descending', 'retrograde', 'prograde', 'direct', 'stationary', 'conjunction', 'opposition', 'square', 'trine', 'sextile', 'quincunx', 'semisextile', 'semisquare'],
-        suffixes: ['star', 'sun', 'moon', 'planet', 'comet', 'asteroid', 'meteor', 'meteorite', 'galaxy', 'nebula', 'cluster', 'constellation', 'orbit', 'trajectory', 'path', 'course', 'route', 'way', 'trail', 'journey', 'voyage', 'expedition', 'mission', 'quest', 'search', 'exploration', 'discovery', 'finding', 'revelation', 'unveiling', 'disclosure', 'exposure', 'manifestation', 'appearance', 'emergence', 'arising', 'dawn', 'sunrise', 'daybreak', 'morning', 'noon', 'afternoon', 'evening', 'dusk', 'twilight', 'sunset', 'nightfall', 'night', 'midnight', 'darkness', 'shadow', 'eclipse', 'occultation', 'transit', 'passage', 'crossing', 'intersection', 'junction', 'nexus', 'node', 'point', 'spot', 'place', 'location', 'position', 'site', 'station', 'base']
+        prefixes: [
+            'alpha', 'astro', 'atom', 'aurora', 'beta', 'binary', 'black', 'blue',
+            'comet', 'cosmic', 'dark', 'delta', 'dust', 'dwarf', 'eclipse', 'energy',
+            'event', 'field', 'flare', 'force', 'gamma', 'giant', 'gravity', 'halo',
+            'hyper', 'ion', 'light', 'lunar', 'magnet', 'mars', 'mass', 'matter',
+            'mega', 'meteor', 'moon', 'nebula', 'neutron', 'nova', 'orbit', 'phase',
+            'planet', 'plasma', 'polar', 'probe', 'proton', 'pulse', 'quasar', 'radio',
+            'ray', 'red', 'ring', 'rocket', 'rover', 'scan', 'scope', 'sector',
+            'shift', 'sky', 'solar', 'sonic', 'space', 'star', 'sun', 'super',
+            'terra', 'time', 'void', 'warp', 'white', 'zero'
+        ],
+        suffixes: [
+            'belt', 'body', 'cloud', 'core', 'disk', 'dust', 'field', 'flare',
+            'force', 'form', 'gas', 'glow', 'halo', 'hole', 'jet', 'light',
+            'line', 'loop', 'mass', 'mode', 'node', 'path', 'phase', 'plane',
+            'point', 'pole', 'pulse', 'ray', 'ring', 'scan', 'scope', 'shock',
+            'side', 'sign', 'site', 'sky', 'space', 'spot', 'star', 'storm',
+            'tail', 'time', 'view', 'void', 'wake', 'wave', 'wind', 'zone',
+            'base', 'deck', 'dock', 'gate', 'helm', 'lock', 'port', 'post'
+        ]
     },
     'mystic-shadow': {
-        prefixes: ['mystic', 'magic', 'arcane', 'occult', 'esoteric', 'hidden', 'secret', 'cryptic', 'mysterious', 'enigmatic', 'obscure', 'veiled', 'shrouded', 'cloaked', 'masked', 'concealed', 'covert', 'furtive', 'stealthy', 'surreptitious', 'clandestine', 'undercover', 'underground', 'subterranean', 'depths', 'abyss', 'void', 'chasm', 'gulf', 'pit', 'crater', 'cavern', 'cave', 'grotto', 'hollow', 'den', 'lair', 'nest', 'burrow', 'warren', 'maze', 'labyrinth', 'puzzle', 'riddle', 'enigma', 'mystery', 'conundrum', 'paradox', 'anomaly', 'aberration', 'deviation', 'divergence', 'departure', 'digression', 'tangent', 'offshoot', 'branch', 'fork', 'split', 'divide', 'rift', 'breach', 'gap', 'opening', 'aperture', 'portal', 'gateway', 'door'],
-        suffixes: ['shadow', 'shade', 'phantom', 'ghost', 'specter', 'wraith', 'spirit', 'soul', 'essence', 'aura', 'presence', 'being', 'entity', 'creature', 'form', 'shape', 'figure', 'silhouette', 'outline', 'contour', 'profile', 'aspect', 'facet', 'feature', 'trait', 'quality', 'attribute', 'property', 'characteristic', 'mark', 'sign', 'symbol', 'token', 'emblem', 'badge', 'crest', 'seal', 'sigil', 'glyph', 'rune', 'cipher', 'code', 'key', 'lock', 'ward', 'charm', 'spell', 'hex', 'curse', 'blessing', 'boon', 'gift', 'power', 'force', 'energy', 'magic', 'mana', 'chi', 'prana', 'vitality', 'life', 'breath', 'wind', 'air', 'ether', 'void', 'abyss']
+        prefixes: [
+            'arcane', 'astral', 'aura', 'bane', 'blood', 'bone', 'chaos', 'charm',
+            'cipher', 'curse', 'dark', 'demon', 'doom', 'dragon', 'dream', 'dusk',
+            'dust', 'elder', 'ember', 'fate', 'fear', 'fire', 'flame', 'ghost',
+            'gloom', 'grim', 'hazel', 'hex', 'hollow', 'honor', 'hope', 'ice',
+            'iron', 'jade', 'karma', 'light', 'lord', 'lore', 'luck', 'mage',
+            'magic', 'mana', 'mind', 'moon', 'myth', 'night', 'null', 'omen',
+            'oracle', 'pain', 'pale', 'rune', 'shade', 'shadow', 'soul', 'spell'
+        ],
+        suffixes: [
+            'bane', 'bind', 'blade', 'blood', 'bone', 'born', 'bound', 'breath',
+            'caller', 'caster', 'chant', 'charm', 'claw', 'cloak', 'code', 'core',
+            'craft', 'crest', 'crown', 'curse', 'dancer', 'doom', 'dream', 'drinker',
+            'dust', 'eater', 'edge', 'eye', 'fang', 'fire', 'flame', 'forge',
+            'gaze', 'ghost', 'guard', 'guide', 'hand', 'heart', 'helm', 'horn',
+            'host', 'hunter', 'keeper', 'knight', 'lord', 'lore', 'mage', 'mark',
+            'mask', 'mind', 'mist', 'moon', 'moth', 'night', 'path', 'paw'
+        ]
     }
 };
 

@@ -513,16 +513,12 @@ node delete-email-aliases.js email-aliases-privacy-guardian-2025-12-31.json
 
 ### Generate Passwords for Aliases
 
-### Generate Passwords for Aliases
-
 Passwords are **automatically generated** when you create new aliases. To generate passwords for existing aliases, use the Main Menu:
 
 ```bash
 node create-email-aliases.js
 # Select Option 2: 🔐 Generate Passwords for Existing File
 ```
-
-**What happens:**
 
 **What happens:**
 
@@ -597,26 +593,18 @@ If you encounter rate limits:
 REQUEST_DELAY_MS=500 node create-email-aliases.js
 ```
 
-### Smaller Batches
-
-Create aliases in chunks for better control:
-
-```bash
-node create-email-aliases.js
-# Select bundle: 1
-# Count: 25
-```
-
 ### Delete Aliases
 
-Clean up using the JSON output:
+You can easily delete aliases using the Main Menu or the standalone script:
 
 ```bash
-# Dry run first
-node delete-email-aliases.js email-aliases-privacy-guardian-2025-12-31.json --dry-run
+# Option 1: Main Menu (Recommended)
+node create-email-aliases.js
+# Select Option 3: 🧹 Cleanup/Delete Aliases
 
-# Actually delete
-node delete-email-aliases.js email-aliases-privacy-guardian-2025-12-31.json
+# Option 2: Standalone Script
+node delete-email-aliases.js oneshotai-site.json --dry-run
+node delete-email-aliases.js oneshotai-site.json
 ```
 
 ---

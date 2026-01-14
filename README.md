@@ -513,18 +513,16 @@ node delete-email-aliases.js email-aliases-privacy-guardian-2025-12-31.json
 
 ### Generate Passwords for Aliases
 
-You can now secure your aliases with high-entropy passwords with a single command. The script auto-resolves your domain and updates all export formats simultaneously.
+### Generate Passwords for Aliases
+
+Passwords are **automatically generated** when you create new aliases. To generate passwords for existing aliases, use the Main Menu:
 
 ```bash
-# Option 1: Automatic (uses EMAIL_DOMAIN from .env)
-node generate-passwords.js
-
-# Option 2: Specify a domain
-node generate-passwords.js oneshotai.site
-
-# Option 3: Specify a file
-node generate-passwords.js oneshotai-site.txt
+node create-email-aliases.js
+# Select Option 2: 🔐 Generate Passwords for Existing File
 ```
+
+**What happens:**
 
 **What happens:**
 

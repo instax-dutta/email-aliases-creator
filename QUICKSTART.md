@@ -220,14 +220,10 @@ npm run dry-run
 
 # 4. Create for real
 npm start
-# Choose bundle: 1
-# Count: 100
+# Menu Option 1: Create Aliases (includes Auto-Password Gen)
+# Choose bundle: 1, Count: 100
 
-# 5. Generate secure passwords (NEW!)
-node generate-passwords.js
-# Automatically secures aliases for oneshotai.site
-
-# 6. Check results (Domain-based naming)
+# 5. Check results (Domain-based naming)
 ls oneshotai-site.*
 # oneshotai-site.json oneshotai-site.toon oneshotai-site.txt
 ```

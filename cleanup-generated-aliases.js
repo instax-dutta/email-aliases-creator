@@ -142,28 +142,27 @@ function isGeneratedAlias(alias) {
 async function main() {
     console.log('🧹 Cleanup Generated Aliases\n');
 
-    // Get target domain from command line or use sdad.pro as default
-    const targetDomain = process.argv[2] || 'sdad.pro';
-
-    console.log(`📍 Target domain: ${targetDomain}`);
-    console.log('🔍 Scanning for generated aliases...\n');
-
-    // Load environment variables
+    // Load environment variables first to populate process.env if not set
     try {
         const envContent = await readFile(join(__dirname, '.env'), 'utf-8');
         envContent.split('\n').forEach(line => {
             const match = line.match(/^([^=]+)=(.*)$/);
-            if (match) {
+            if (match && !process.env[match[1].trim()]) { // Only set if not already defined
                 process.env[match[1].trim()] = match[2].trim();
             }
         });
     } catch (error) {
-        console.error('❌ Error: .env file not found');
-        process.exit(1);
+        // .env might be optional if variables are passed via shell
     }
 
+    // 1. Get target domain: Env var (from parent) > Arg > Fallback
+    const targetDomain = process.env.EMAIL_DOMAIN || process.argv[2] || 'sdad.pro';
+
+    console.log(`📍 Target domain: ${targetDomain}`);
+    console.log('🔍 Scanning for generated aliases...\n');
+
     if (!process.env.CLOUDFLARE_API_TOKEN) {
-        console.error('❌ Error: Missing CLOUDFLARE_API_TOKEN in .env file\n');
+        console.error('❌ Error: Missing CLOUDFLARE_API_TOKEN in .env or environment\n');
         process.exit(1);
     }
 

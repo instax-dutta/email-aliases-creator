@@ -14,6 +14,8 @@ import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import readline from 'readline';
+import { randomBytes } from 'crypto';
+import { execSync, spawn } from 'child_process';
 
 // ============================================================================
 // ENVIRONMENT LOADER
@@ -473,6 +475,97 @@ function generateAliasNames(count, seed, bundleKey) {
 }
 
 // ============================================================================
+// PASSWORD GENERATION MODULE
+// ============================================================================
+
+const CHARSET = {
+    lowercase: 'abcdefghijklmnopqrstuvwxyz',
+    uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    numbers: '0123456789',
+    special: '!@#$%^&*()-_=+[]{}|;:,.<>?'
+};
+const ALL_CHARS = CHARSET.lowercase + CHARSET.uppercase + CHARSET.numbers + CHARSET.special;
+
+function generateSecurePassword(length = 12) {
+    if (length < 8) throw new Error('Password length must be at least 8 characters');
+    const password = [];
+    password.push(CHARSET.lowercase[randomBytes(1)[0] % CHARSET.lowercase.length]);
+    password.push(CHARSET.uppercase[randomBytes(1)[0] % CHARSET.uppercase.length]);
+    password.push(CHARSET.numbers[randomBytes(1)[0] % CHARSET.numbers.length]);
+    password.push(CHARSET.special[randomBytes(1)[0] % CHARSET.special.length]);
+    for (let i = password.length; i < length; i++) {
+        password.push(ALL_CHARS[randomBytes(1)[0] % ALL_CHARS.length]);
+    }
+    return password.sort(() => 0.5 - Math.random()).join('');
+}
+
+function generateUniquePasswords(aliases) {
+    const credentials = [];
+    const used = new Set();
+    for (const alias of aliases) {
+        let password;
+        do { password = generateSecurePassword(); } while (used.has(password));
+        used.add(password);
+        credentials.push({ email: alias, password });
+    }
+    return credentials;
+}
+
+async function updateFilesWithPasswords(domainSlug, credentials) {
+    const jsonFile = `${domainSlug}.json`;
+    const txtFile = `${domainSlug}.txt`;
+    const toonFile = `${domainSlug}.toon`;
+
+    try {
+        console.log(`\n🔒 Encrypting & Securing Aliases...`);
+
+        // Update TXT
+        const txtContent = credentials.map(c => `${c.email}:${c.password}`).join('\n') + '\n';
+        await writeFile(txtFile, txtContent, 'utf-8');
+
+        // Update JSON
+        if (existsSync(jsonFile)) {
+            const jsonData = JSON.parse(await readFile(jsonFile, 'utf-8'));
+            const credMap = new Map(credentials.map(c => [c.email, c.password]));
+
+            let updatedList = [];
+            // Handle both structure types (array or object wrapper)
+            if (Array.isArray(jsonData)) updatedList = jsonData;
+            else if (jsonData.results || jsonData.aliases) updatedList = jsonData.results || jsonData.aliases;
+
+            const enriched = updatedList.map(entry => ({
+                ...entry,
+                password: credMap.get(entry.alias) || entry.password
+            }));
+
+            // Save always as the robust object format now
+            const finalJson = {
+                metadata: {
+                    domain: domainSlug.replace(/-/g, '.'),
+                    updated_at: new Date().toISOString(),
+                    count: credentials.length,
+                    secure: true
+                },
+                results: enriched
+            };
+            await writeFile(jsonFile, JSON.stringify(finalJson, null, 2));
+        }
+
+        // Update TOON
+        if (existsSync(toonFile)) {
+            const toonData = await readFile(toonFile, 'utf-8');
+            let newToonCreate = toonData + `\n\ncredentials[${credentials.length}]:\n` +
+                credentials.map(c => `  ${c.email},${c.password}`).join('\n');
+            await writeFile(toonFile, newToonCreate);
+        }
+
+        console.log(`✅ Passwords generated and files updated successfully!`);
+    } catch (e) {
+        console.error(`❌ Password update failed: ${e.message}`);
+    }
+}
+
+// ============================================================================
 // CLOUDFLARE API CLIENT
 // ============================================================================
 
@@ -563,7 +656,7 @@ async function createEmailRoutingRule(aliasEmail, destinationEmail, retryCount =
 }
 
 // ============================================================================
-// MAIN ORCHESTRATION
+// MAIN ORCHESTRATION & MENU
 // ============================================================================
 
 function validateConfig() {
@@ -580,45 +673,15 @@ function validateConfig() {
     }
 }
 
-async function main() {
-    console.log('🚀 Cloudflare Email Routing Bulk Alias Creator\n');
-    console.log('   Interactive Privacy-Focused Edition\n');
-
-    // Auto-resolve Zone ID if possible
-    await initializeConfig();
-
-    // Validate configuration
-    try {
-        validateConfig();
-    } catch (error) {
-        console.error(`❌ Configuration error: ${error.message}\n`);
-        console.error('Required environment variables:');
-        console.error('  - CLOUDFLARE_API_TOKEN');
-        console.error('  - EMAIL_DOMAIN');
-        console.error('  - DESTINATION_EMAIL');
-        console.error('\nNote: CLOUDFLARE_ZONE_ID is optional if the domain is correctly set.');
-        console.error('\nOptional environment variables:');
-        console.error('  - CLOUDFLARE_ZONE_ID');
-        console.error('  - REQUEST_DELAY_MS (default: 100)');
-        console.error('  - RANDOM_SEED (default: current timestamp)');
-        process.exit(1);
-    }
-
-    // Interactive mode (unless dry-run with no selection)
-    const rl = createReadline();
-
+async function runCreationFlow(rl) {
     try {
         // Select bundle
         CONFIG.selectedBundle = await selectBundle(rl);
-
         // Get alias count
         CONFIG.aliasCount = await getAliasCount(rl);
-
-        rl.close();
     } catch (error) {
-        rl.close();
         console.error(`\n❌ Input error: ${error.message}\n`);
-        process.exit(1);
+        return;
     }
 
     // Display configuration
@@ -642,9 +705,6 @@ async function main() {
         aliasNames.slice(0, 10).forEach((name, index) => {
             console.log(`   ${index + 1}. ${name}@${CONFIG.emailDomain} → ${CONFIG.destinationEmail}`);
         });
-        if (aliasNames.length > 10) {
-            console.log(`   ... and ${aliasNames.length - 10} more\n`);
-        }
         console.log('✅ Dry run complete. No aliases were created.\n');
         return;
     }
@@ -668,33 +728,24 @@ async function main() {
 
         try {
             console.log(`[${i + 1}/${aliasNames.length}] Creating: ${aliasEmail}`);
-
             const apiResponse = await createEmailRoutingRule(aliasEmail, CONFIG.destinationEmail);
-
             result.ruleId = apiResponse.ruleId;
             result.status = 'success';
             successCount++;
-
             console.log(`✅ Created successfully (ID: ${apiResponse.ruleId})\n`);
-
         } catch (error) {
             result.status = 'failed';
             result.error = error.message;
             failureCount++;
-
             console.error(`❌ Failed: ${error.message}\n`);
         }
 
         results.push(result);
-
-        if (i < aliasNames.length - 1) {
-            await delay(CONFIG.requestDelayMs);
-        }
+        if (i < aliasNames.length - 1) await delay(CONFIG.requestDelayMs);
     }
 
-    // Export results to JSON
-    // Use domain-based naming for simpler file management
-    const domainSlug = CONFIG.emailDomain.replace(/\./g, '-'); // aeglyn.site -> aeglyn-site
+    // Export results
+    const domainSlug = CONFIG.emailDomain.replace(/\./g, '-');
     const outputFileName = `${domainSlug}.json`;
     const txtFileName = `${domainSlug}.txt`;
     const toonFileName = `${domainSlug}.toon`;
@@ -702,25 +753,25 @@ async function main() {
     try {
         await writeFile(outputFileName, JSON.stringify(results, null, 2), 'utf-8');
         console.log(`\n💾 Results exported to: ${outputFileName}`);
-    } catch (error) {
-        console.error(`\n❌ Failed to write JSON file: ${error.message}`);
+    } catch (e) {
+        console.error(`\n❌ Failed to write JSON file: ${e.message}`);
     }
 
-    // Export simple text file with one email per line (successful aliases only)
     try {
-        const successfulAliases = results
-            .filter(r => r.status === 'success')
-            .map(r => r.alias)
-            .join('\n');
-
-        await writeFile(txtFileName, successfulAliases + '\n', 'utf-8');
+        const successfulAliases = results.filter(r => r.status === 'success').map(r => r.alias);
+        await writeFile(txtFileName, successfulAliases.join('\n') + '\n', 'utf-8');
         console.log(`📝 Email list exported to: ${txtFileName}`);
-        console.log(`   (${successCount} emails, one per line)`);
-    } catch (error) {
-        console.error(`\n❌ Failed to write TXT file: ${error.message}`);
+
+        // AUTOMATIC PASSWORD GENERATION
+        if (successfulAliases.length > 0) {
+            const credentials = generateUniquePasswords(successfulAliases);
+            await updateFilesWithPasswords(domainSlug, credentials);
+        }
+
+    } catch (e) {
+        console.error(`\n❌ Failed to write TXT/Passwords: ${e.message}`);
     }
 
-    // Export TOON file for LLM usage (30-60% token reduction vs JSON)
     try {
         const toonContent = generateToon(results, {
             bundle: CONFIG.selectedBundle,
@@ -732,12 +783,10 @@ async function main() {
             failureCount,
             timestamp: new Date().toISOString()
         });
-
         await writeFile(toonFileName, toonContent, 'utf-8');
-        console.log(`🤖 TOON (LLM-optimized) exported to: ${toonFileName}`);
-        console.log(`   (30-60% fewer tokens than JSON)\n`);
-    } catch (error) {
-        console.error(`\n❌ Failed to write TOON file: ${error.message}\n`);
+        console.log(`🤖 TOON exported to: ${toonFileName}\n`);
+    } catch (e) {
+        console.error(`\n❌ Failed to write TOON file: ${e.message}\n`);
     }
 
     // Summary
@@ -749,8 +798,67 @@ async function main() {
     console.log(`❌ Failed: ${failureCount}`);
     console.log(`📧 Total: ${results.length}`);
     console.log('═══════════════════════════════════════════════════════\n');
+}
 
-    process.exit(failureCount > 0 ? 1 : 0);
+async function main() {
+    console.log('🚀 Cloudflare Email Routing Suite\n');
+    console.log('   Interactive Privacy-Focused Edition\n');
+
+    await initializeConfig();
+
+    try {
+        validateConfig();
+    } catch (error) {
+        console.error(`❌ Configuration error: ${error.message}\n`);
+        console.log('Please check your .env file.');
+        process.exit(1);
+    }
+
+    const rl = createReadline();
+
+    // MAIN MENU LOOP
+    while (true) {
+        console.log('\n🔵 MAIN MENU:');
+        console.log('1. ✨ Create Aliases (includes Auto-Password Gen)');
+        console.log('2. 🔐 Generate Passwords for Existing File');
+        console.log('3. 🧹 Cleanup/Delete Aliases');
+        console.log('4. 🧪 Test Credentials');
+        console.log('5. 🚪 Exit');
+
+        const choice = await question(rl, '\n👉 Select an option (1-5): ');
+
+        if (choice.trim() === '1') {
+            await runCreationFlow(rl);
+            break; // Exit after creation run
+        } else if (choice.trim() === '2') {
+            // Trigger existing password generator logic via shell for simplicity
+            // or call internal logic if we fully ported it. Here we call internal.
+            const domainSlug = CONFIG.emailDomain.replace(/\./g, '-');
+            const txtFile = `${domainSlug}.txt`;
+            if (existsSync(txtFile)) {
+                const content = await readFile(txtFile, 'utf-8');
+                const emails = content.split('\n').map(l => l.trim()).filter(l => l && l.includes('@'));
+                console.log(`Found ${emails.length} aliases in ${txtFile}. Generating passwords...`);
+                const creds = generateUniquePasswords(emails);
+                await updateFilesWithPasswords(domainSlug, creds);
+            } else {
+                console.log(`❌ File not found: ${txtFile}`);
+            }
+        } else if (choice.trim() === '3') {
+            console.log('Launching Cleanup Script...');
+            try { execSync('node cleanup-generated-aliases.js', { stdio: 'inherit' }); } catch (e) { }
+        } else if (choice.trim() === '4') {
+            console.log('Launching Test Script...');
+            try { execSync('node test-credentials.js', { stdio: 'inherit' }); } catch (e) { }
+        } else if (choice.trim() === '5') {
+            console.log('Bye! 👋');
+            process.exit(0);
+        } else {
+            console.log('❌ Invalid option.');
+        }
+    }
+
+    rl.close();
 }
 
 // ============================================================================

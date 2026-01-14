@@ -17,7 +17,39 @@
  */
 
 import { readFile, writeFile } from 'fs/promises';
+import { existsSync } from 'fs';
 import { randomBytes } from 'crypto';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// ============================================================================
+// ENVIRONMENT LOADER
+// ============================================================================
+
+async function loadEnvFile() {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const envPath = join(__dirname, '.env');
+
+    if (!existsSync(envPath)) return;
+
+    try {
+        const envContent = await readFile(envPath, 'utf-8');
+        envContent.split('\n').forEach(line => {
+            const match = line.trim().match(/^([^=]+)=(.*)$/);
+            if (match) {
+                const key = match[1].trim();
+                let value = match[2].trim();
+                if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+                    value = value.slice(1, -1);
+                }
+                if (!process.env[key]) process.env[key] = value;
+            }
+        });
+    } catch (e) { }
+}
+
+await loadEnvFile();
 
 // ============================================================================
 // PASSWORD GENERATION
@@ -183,39 +215,57 @@ function generateToonFormat(credentials, metadata) {
 async function main() {
     console.log('🔐 Email Alias Password Generator\n');
 
-    // Get input file from command line
-    const inputFile = process.argv[2];
+    // Get input from command line, fallback to .env EMAIL_DOMAIN
+    let input = process.argv[2] || process.env.EMAIL_DOMAIN;
 
-    if (!inputFile) {
-        console.error('❌ Error: No input file specified\n');
+    if (!input) {
+        console.error('❌ Error: No domain or file specified\n');
         console.error('Usage:');
-        console.error('  node generate-passwords.js <email-list.txt>\n');
+        console.error('  node generate-passwords.js <domain-or-file>\n');
         console.error('Example:');
-        console.error('  node generate-passwords.js email-aliases-privacy-guardian-2025-12-31.txt\n');
+        console.error('  node generate-passwords.js aeglyn.site');
         process.exit(1);
     }
 
-    if (!inputFile.endsWith('.txt')) {
-        console.error('❌ Error: Input file must be a .txt file\n');
+    // Smart file resolution
+    let inputFile = input;
+    if (!input.endsWith('.txt') && !input.endsWith('.json')) {
+        // Assume domain name, slugify it
+        const domainSlug = input.replace(/\./g, '-');
+        inputFile = `${domainSlug}.txt`;
+        console.log(`🔍 Detected domain: ${input}`);
+        console.log(`📂 Looking for: ${inputFile}`);
+    }
+
+    if (!existsSync(inputFile)) {
+        console.error(`❌ Error: File not found: ${inputFile}\n`);
         process.exit(1);
     }
 
     try {
-        const baseFileName = inputFile.replace('.txt', '');
+        const baseFileName = inputFile.replace(/\.(txt|json)$/, '');
         const jsonFile = `${baseFileName}.json`;
         const toonFile = `${baseFileName}.toon`;
+        const txtFile = `${baseFileName}.txt`;
 
-        // Step 1: Read emails from TXT file
-        console.log(`📖 Reading emails from: ${inputFile}`);
-        const emails = await readEmailsFromTxt(inputFile);
-        console.log(`✅ Found ${emails.length} email addresses\n`);
-
-        if (emails.length === 0) {
-            console.error('❌ No valid email addresses found in file\n');
-            process.exit(1);
+        // Step 1: Read emails (from TXT if possible, fallback to JSON)
+        console.log(`📖 Reading aliases from: ${inputFile}`);
+        let emails = [];
+        if (inputFile.endsWith('.json')) {
+            const jsonContent = JSON.parse(await readFile(inputFile, 'utf-8'));
+            const data = Array.isArray(jsonContent) ? jsonContent : jsonContent.aliases || [];
+            emails = data.map(entry => entry.alias || entry.email).filter(Boolean);
+        } else {
+            emails = await readEmailsFromTxt(inputFile);
         }
 
-        // Step 2: Generate unique passwords (parallel processing)
+        if (emails.length === 0) {
+            console.error('❌ No valid aliases found to generate passwords for.\n');
+            process.exit(1);
+        }
+        console.log(`✅ Found ${emails.length} aliases\n`);
+
+        // Step 2: Generate unique passwords
         console.log('🔒 Generating secure passwords...');
         const startTime = Date.now();
         const credentials = generateUniquePasswords(emails);
@@ -223,45 +273,47 @@ async function main() {
         console.log(`✅ Generated ${credentials.length} unique passwords in ${duration}ms\n`);
 
         // Step 3: Update TXT file (email:password format)
-        console.log('💾 Updating files...');
+        console.log('💾 Updating exports...');
         const txtContent = credentials.map(c => `${c.email}:${c.password}`).join('\n') + '\n';
-        await writeFile(inputFile, txtContent, 'utf-8');
-        console.log(`✅ Updated: ${inputFile}`);
+        await writeFile(txtFile, txtContent, 'utf-8');
+        console.log(`✅ Updated TXT list: ${txtFile}`);
 
-        // Step 4: Update JSON file (add passwords to existing data)
+        // Step 4: Update JSON file
         try {
-            const jsonContent = await readFile(jsonFile, 'utf-8');
-            const jsonData = JSON.parse(jsonContent);
+            if (existsSync(jsonFile)) {
+                const jsonContent = await readFile(jsonFile, 'utf-8');
+                const jsonData = JSON.parse(jsonContent);
+                const credMap = new Map(credentials.map(c => [c.email, c.password]));
 
-            // Add passwords to each alias entry
-            const credMap = new Map(credentials.map(c => [c.email, c.password]));
+                let updatedAliases = [];
+                if (Array.isArray(jsonData)) {
+                    updatedAliases = jsonData.map(entry => ({
+                        ...entry,
+                        password: credMap.get(entry.alias || entry.email) || entry.password
+                    }));
+                } else if (jsonData.results || jsonData.aliases) {
+                    const base = jsonData.results || jsonData.aliases;
+                    updatedAliases = base.map(entry => ({
+                        ...entry,
+                        password: credMap.get(entry.alias || entry.email) || entry.password
+                    }));
+                }
 
-            if (Array.isArray(jsonData)) {
-                // Simple array format
-                jsonData.forEach(entry => {
-                    if (entry.alias && credMap.has(entry.alias)) {
-                        entry.password = credMap.get(entry.alias);
-                    }
-                });
+                const finalJson = {
+                    metadata: {
+                        domain: baseFileName.replace('-', '.'),
+                        updated_at: new Date().toISOString(),
+                        total_count: credentials.length,
+                        security: '12-character mixed-set passwords'
+                    },
+                    results: updatedAliases
+                };
+
+                await writeFile(jsonFile, JSON.stringify(finalJson, null, 2), 'utf-8');
+                console.log(`✅ Updated JSON data: ${jsonFile}`);
             }
-
-            // Add metadata about passwords
-            const updatedJson = {
-                metadata: {
-                    generated: jsonData.metadata?.generated || new Date().toISOString(),
-                    updated_with_passwords: new Date().toISOString(),
-                    total_count: credentials.length,
-                    password_length: 12,
-                    password_charset: 'lowercase,uppercase,numbers,special'
-                },
-                aliases: Array.isArray(jsonData) ? jsonData : jsonData.aliases || jsonData,
-                credentials: credentials
-            };
-
-            await writeFile(jsonFile, JSON.stringify(updatedJson, null, 2), 'utf-8');
-            console.log(`✅ Updated: ${jsonFile}`);
         } catch (error) {
-            console.log(`⚠️  JSON file not found, skipping: ${jsonFile}`);
+            console.warn(`⚠️  JSON update failed: ${error.message}`);
         }
 
         // Step 5: Update TOON file
@@ -271,15 +323,19 @@ async function main() {
                 sourceFile: inputFile
             });
             await writeFile(toonFile, toonContent, 'utf-8');
-            console.log(`✅ Updated: ${toonFile}\n`);
+            console.log(`✅ Updated TOON export: ${toonFile}\n`);
         } catch (error) {
-            console.log(`⚠️  TOON file error: ${error.message}`);
+            console.warn(`⚠️  TOON update failed: ${error.message}`);
         }
 
         // Summary
         console.log('═══════════════════════════════════════════════════════');
-        console.log('📊 SUMMARY');
+        console.log('📊 PASSWORD GENERATION SUMMARY');
         console.log('═══════════════════════════════════════════════════════');
+        console.log(`📧 Aliases secured: ${credentials.length}`);
+        console.log(`🔑 Formats updated: TXT, JSON, TOON`);
+        console.log(`⚡ Speed: ${(credentials.length / (duration / 1000 || 1)).toFixed(0)} creds/sec`);
+        console.log('═══════════════════════════════════════════════════════\n');
         console.log(`📧 Emails processed: ${credentials.length}`);
         console.log('🔐 Password strength: Strong (12 characters)');
         console.log('   - Lowercase: ✓');

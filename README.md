@@ -513,34 +513,41 @@ node delete-email-aliases.js email-aliases-privacy-guardian-2025-12-31.json
 
 ### Generate Passwords for Aliases
 
-Add secure passwords to your email aliases:
+You can now secure your aliases with high-entropy passwords with a single command. The script auto-resolves your domain and updates all export formats simultaneously.
 
 ```bash
-# Generate passwords for existing aliases
-node generate-passwords.js email-aliases-privacy-guardian-2025-12-31.txt
+# Option 1: Automatic (uses EMAIL_DOMAIN from .env)
+node generate-passwords.js
 
-# Files updated in place:
-✅ Updated: email-aliases-privacy-guardian-2025-12-31.txt (email:password format)
-✅ Updated: email-aliases-privacy-guardian-2025-12-31.json (with credentials)
-✅ Updated: email-aliases-privacy-guardian-2025-12-31.toon (LLM-optimized)
+# Option 2: Specify a domain
+node generate-passwords.js oneshotai.site
+
+# Option 3: Specify a file
+node generate-passwords.js oneshotai-site.txt
 ```
+
+**What happens:**
+
+1. 📖 Reads aliases from your domain's `.txt` file.
+2. 🔒 Generates unique **12-character** secure passwords.
+3. 💾 Updates **TXT** (`email:password`), **JSON** (full data), and **TOON** exports.
 
 **Password Features:**
 
-- 🔐 **12 characters** - Mix of lowercase, uppercase, numbers, special chars
-- ⚡ **15,000+ passwords/sec** - Cryptographically secure generation
-- ✨ **Zero duplicates** - Guaranteed unique passwords
-- 🔒 **Crypto-random** - Uses Node.js `crypto.randomBytes()`
+- 🔐 **12 characters** - Mix of lowercase, uppercase, numbers, special chars.
+- ⚡ **Extremely Fast** - Cryptographically secure generation.
+- ✨ **Zero duplicates** - Guaranteed unique passwords.
+- 🔒 **Crypto-random** - Uses Node.js `crypto.randomBytes()`.
 
-**Output Format:**
+**Output TXT Format:**
 
 ```
-private.lair@sdad.pro:7S;*)I93=>5r
-private.asylum@sdad.pro:S^2nh0d,0L2:
-untraced.tunnel@sdad.pro:7_@x)Y%5L=[A
+fallen.spirit@oneshotai.site:m7cRm#Qi_Rgb
+wraith.pendant@oneshotai.site:sxt)DKSRLMx3
+spectral.seal@oneshotai.site:eA0#DD$k%&Oo
 ```
 
-**Security Warning:** Password files contain plaintext credentials. Store securely or use a password manager!
+**Security Warning:** These files now contain plaintext credentials. Store them securely or use a password manager!
 
 ---
 

@@ -223,7 +223,11 @@ npm start
 # Choose bundle: 1
 # Count: 100
 
-# 4. Check results (Domain-based naming)
+# 5. Generate secure passwords (NEW!)
+node generate-passwords.js
+# Automatically secures aliases for oneshotai.site
+
+# 6. Check results (Domain-based naming)
 ls oneshotai-site.*
 # oneshotai-site.json oneshotai-site.toon oneshotai-site.txt
 ```

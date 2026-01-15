@@ -519,44 +519,81 @@ async function updateFilesWithPasswords(domainSlug, credentials) {
     try {
         console.log(`\n🔒 Encrypting & Securing Aliases...`);
 
-        // Update TXT
-        const txtContent = credentials.map(c => `${c.email}:${c.password}`).join('\n') + '\n';
-        await writeFile(txtFile, txtContent, 'utf-8');
+        // UPDATE TXT (Append/Merge)
+        let allTxtLines = [];
+        if (existsSync(txtFile)) {
+            const existingContent = await readFile(txtFile, 'utf-8');
+            // Split, trim, and filter valid lines
+            allTxtLines = existingContent.split('\n').map(l => l.trim()).filter(l => l.includes('@'));
+        }
 
-        // Update JSON
+        // Create map of existing data to avoid duplicates/overwrite existing passwords if we want
+        // But usually we just want to ADD new ones. 
+        // If an alias exists in file without password (e.g. from previous step), we update it.
+        const txtMap = new Map();
+        allTxtLines.forEach(line => {
+            const [email, pwd] = line.split(':');
+            txtMap.set(email, pwd || ''); // preserve existing password if any
+        });
+
+        // Merge new credentials
+        credentials.forEach(c => {
+            txtMap.set(c.email, c.password);
+        });
+
+        const newTxtContent = Array.from(txtMap.entries()).map(([email, pwd]) => `${email}:${pwd}`).join('\n') + '\n';
+        await writeFile(txtFile, newTxtContent, 'utf-8');
+
+
+        // UPDATE JSON (Merge)
         if (existsSync(jsonFile)) {
-            const jsonData = JSON.parse(await readFile(jsonFile, 'utf-8'));
+            const rawContent = await readFile(jsonFile, 'utf-8');
+            let jsonData;
+            try { jsonData = JSON.parse(rawContent); } catch (e) { jsonData = []; }
+
+            // Normalize to array
+            let masterList = [];
+            if (Array.isArray(jsonData)) masterList = jsonData;
+            else if (jsonData.results || jsonData.aliases) masterList = jsonData.results || jsonData.aliases;
+
+            // Update or Add
             const credMap = new Map(credentials.map(c => [c.email, c.password]));
 
-            let updatedList = [];
-            // Handle both structure types (array or object wrapper)
-            if (Array.isArray(jsonData)) updatedList = jsonData;
-            else if (jsonData.results || jsonData.aliases) updatedList = jsonData.results || jsonData.aliases;
+            // Map existing items, adding passwords if missing and we have them
+            masterList = masterList.map(item => {
+                if (credMap.has(item.alias)) {
+                    const newPwd = credMap.get(item.alias);
+                    credMap.delete(item.alias); // Remove from map so we know it's handled
+                    return { ...item, password: newPwd };
+                }
+                return item;
+            });
 
-            const enriched = updatedList.map(entry => ({
-                ...entry,
-                password: credMap.get(entry.alias) || entry.password
-            }));
+            // If there are leftovers in credMap (aliases not in JSON?? shouldn't happen if flow is correct, but safe to add)
+            // Actually, in the main flow, JSON is updated FIRST with all aliases, then this function is called.
+            // So we just need to ensure we save the 'masterList' back correctly.
 
-            // Save always as the robust object format now
             const finalJson = {
                 metadata: {
                     domain: domainSlug.replace(/-/g, '.'),
                     updated_at: new Date().toISOString(),
-                    count: credentials.length,
+                    count: masterList.length,
                     secure: true
                 },
-                results: enriched
+                results: masterList
             };
+
             await writeFile(jsonFile, JSON.stringify(finalJson, null, 2));
         }
 
-        // Update TOON
+        // UPDATE TOON (Append)
         if (existsSync(toonFile)) {
-            const toonData = await readFile(toonFile, 'utf-8');
-            let newToonCreate = toonData + `\n\ncredentials[${credentials.length}]:\n` +
-                credentials.map(c => `  ${c.email},${c.password}`).join('\n');
-            await writeFile(toonFile, newToonCreate);
+            // Check if we already appended this specific block to avoid dupes in TOON? 
+            // TOON is a log format, so appending is generally fine.
+            const newBlock = `\n\ncredentials_update[${new Date().toISOString()}]:\n` +
+                credentials.map(c => `  ${c.email} : ${c.password}`).join('\n');
+
+            await writeFile(toonFile, newBlock, { flag: 'a' });
         }
 
         console.log(`✅ Passwords generated and files updated successfully!`);

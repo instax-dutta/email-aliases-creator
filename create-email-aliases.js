@@ -1001,10 +1001,9 @@ async function main() {
         console.log('2. 🔐 Generate Passwords for Existing File');
         console.log('3. 🧹 Cleanup/Delete Aliases');
         console.log('4. 🧪 Test Credentials');
-        console.log('5. 📝 Convert JSON to TXT');
-        console.log('6. 🚪 Exit');
+        console.log('5. 🚪 Exit');
 
-        const choice = await question(rl, '\n👉 Select an option (1-6): ');
+        const choice = await question(rl, '\n👉 Select an option (1-5): ');
 
         if (choice.trim() === '1') {
             await runCreationFlow(rl);
@@ -1034,8 +1033,6 @@ async function main() {
         } else if (choice.trim() === '4') {
             await runCredentialTest();
         } else if (choice.trim() === '5') {
-            await runJsonToTxtConverter(rl);
-        } else if (choice.trim() === '6') {
             console.log('Bye! 👋');
             process.exit(0);
         } else {

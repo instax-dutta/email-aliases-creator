@@ -389,8 +389,35 @@ async function main() {
         console.log(`📧 Domain: ${targetDomain}`);
         console.log('═══════════════════════════════════════════════════════\n');
 
-        if (deleted > 0) {
+        if (deleted > 0 && failed === 0) {
             console.log('🎉 Cleanup complete! Generated aliases removed.\n');
+
+            // Clean up local files
+            const { unlink } = await import('fs/promises');
+            const filesToDelete = [
+                `${domainSlug}.json`,
+                `${domainSlug}.txt`,
+                `${domainSlug}.toon`
+            ];
+
+            let cleanedFiles = 0;
+            for (const file of filesToDelete) {
+                const filePath = join(__dirname, file);
+                try {
+                    // Check existence before delete to avoid errors
+                    const { existsSync } = await import('fs');
+                    if (existsSync(filePath)) {
+                        await unlink(filePath);
+                        console.log(`🗑️  Removed local file: ${file}`);
+                        cleanedFiles++;
+                    }
+                } catch (err) {
+                    console.warn(`⚠️  Could not delete existing file ${file}: ${err.message}`);
+                }
+            }
+            if (cleanedFiles > 0) console.log('\n✅ Local tracking files cleaned up.');
+        } else if (deleted > 0) {
+            console.log('🎉 Cleanup partial! (Check failures)\n');
         }
 
     } catch (error) {
